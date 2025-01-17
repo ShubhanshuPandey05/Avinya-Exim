@@ -1,0 +1,13 @@
+import express from 'express';
+import protectRoute from '../middleware/protectRoute.js';
+import { addSales, addStocks, getStocksByCity, getStocksColors, getStocksItems, getStocksToBeRecieved, stockDispatched, stockRecieved } from '../controller/stocksController.js';
+const router = express.Router();
+router.get("/get-stock/:city",protectRoute, getStocksByCity);
+router.get("/get-stockRecieved",protectRoute, getStocksToBeRecieved);
+router.get("/get-stockItems",protectRoute, getStocksItems);
+router.get("/get-stockColor",protectRoute, getStocksColors);
+router.post("/add-stocks",protectRoute, addStocks);
+router.post("/add-sales",protectRoute, addSales);
+router.post("/stocks-dispatching",protectRoute, stockDispatched);
+router.post("/stocks-recieving",protectRoute, stockRecieved);
+export default router;
