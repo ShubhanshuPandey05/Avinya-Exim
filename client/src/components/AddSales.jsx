@@ -27,7 +27,7 @@ export default function AddSale() {
     async function fetchItems() {
       try {
         showLoading();
-        const response = await fetch("/api/get-stock/${city}", {
+        const response = await fetch(`/api/get-stock/${city}`, {
         // const response = await fetch(`http://localhost:8000/api/get-stock/${city}`, {
           method: "GET",
           headers: {
