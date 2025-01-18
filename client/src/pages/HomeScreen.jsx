@@ -1,12 +1,11 @@
 import React from 'react'
-import useLogOut from '../hooks/useLogOut'
 import YourStocks from '../components/MyStocks'
+import LogOut from '../components/LogOut'
 
 function HomeScreen() {
-  const { logOut } = useLogOut()
   return (
     <div>
-      <button className='bg-red-500 text-white w-20 h-10 rounded-lg m-5' onClick={logOut}>Logout</button>
+      <LogOut />
       <YourStocks />
     </div>
   )

@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from "cookie-parser";
 import stocksRoute from "./routes/stocksRoutes.js"
 import authRoute from "./routes/authRoutes.js"
+import notificationRoute from "./routes/notificationRoutes.js"
 import connectionToDatabase from './database/databaseConnection.js';
 import dotenv from "dotenv";
 import path from 'path';
@@ -18,6 +19,15 @@ app.use(cors({
   origin: ["http://localhost:5173"],
   credentials: true
 }))
+
+
+webPush.setVapidDetails(
+    'mailto:me@mail.com', // Contact email
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+);
+
+
 app.options('*', cors()); // Allow all preflight requests
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -25,13 +35,12 @@ dotenv.config();
 // app.use(express.static(path.join(__dirname, 'client', 'dist')));
 
 
-
-
 app.get('/ping', (req, res) => {
     res.send("StockXo Api")
 })
 app.use("/api/", stocksRoute)
 app.use("/api/auth/", authRoute)
+app.use("/api/notification", notificationRoute)
 // app.get('*', (req, res) => {
 //   res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
 // });
@@ -43,10 +52,6 @@ app.listen(PORT, () => {
   connectionToDatabase();
   console.log(`Server is running on http://localhost:${PORT}`);
 });
-
-
-
-
 
 
 
@@ -133,3 +138,4 @@ app.listen(PORT, () => {
     
     //   res.status(201).json({ message: 'Subscription added successfully!' });
     // });
+    

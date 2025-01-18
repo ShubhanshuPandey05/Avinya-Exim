@@ -2,6 +2,7 @@ import { google } from "googleapis"
 import dotenv from "dotenv";
 import webPush from 'web-push';
 import User from "../models/userModel.js";
+import { sendNotification } from "./notificationController.js";
 dotenv.config();
 
 
@@ -500,7 +501,8 @@ export const addSales = async (req, res) => {
       return res.status(404).json({ error: "No data found in the sheet." });
     }
 
-    const targetColumnIndex = 0; // Assuming stockId is in the first column
+    const targetColumnIndex = 0;// Assuming stockId is in the first column
+    let bellNo;
 
     for (const item of items) {
       let rowIndex = -1;
@@ -533,6 +535,8 @@ export const addSales = async (req, res) => {
         },
       });
 
+      bellNo = rows[rowIndex - 1][3]
+
       // Create new sale record
       const newSale = [
         item.stockId, // Stock ID
@@ -563,6 +567,10 @@ export const addSales = async (req, res) => {
           values: newSales,
         },
       });
+
+
+      sendNotification(bellNo)
+
 
       res.status(200).json({
         message: "Spreadsheet updated successfully",
