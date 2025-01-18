@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import generateAndSetCookies from "../utils/generateToken.js";
 import User from "../models/userModel.js";
 import fetch from 'node-fetch';
