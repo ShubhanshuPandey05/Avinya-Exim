@@ -24,16 +24,16 @@ export default function AddStocks() {
     async function fetchItems() {
       try {
         showLoading();
-        const response = await fetch("http://localhost:8000/api/get-stockItems", {
-          // const response = await fetch("/api/get-stockItems", {
+        // const response = await fetch("http://localhost:8000/api/get-stockItems", {
+          const response = await fetch("/api/get-stockItems", {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
         });
         const data = await response.json();
         setItemOptions(data.data.map((item) => item["Item Names"]));
-        const response2 = await fetch("http://localhost:8000/api/get-stockColor", {
-          // const response = await fetch("/api/get-stockColor", {
+        // const response2 = await fetch("http://localhost:8000/api/get-stockColor", {
+          const response2 = await fetch("/api/get-stockColor", {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -95,8 +95,8 @@ export default function AddStocks() {
 
   const confirmOrder = async () => {
     try {
-      // const response = await fetch("/api/add-stocks", {
-      const response = await fetch("http://localhost:8000/api/add-stocks", {
+      const response = await fetch("/api/add-stocks", {
+      // const response = await fetch("http://localhost:8000/api/add-stocks", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items }),

@@ -32,7 +32,7 @@ app.options('*', cors()); // Allow all preflight requests
 app.use(bodyParser.json());
 app.use(cookieParser());
 dotenv.config();
-// app.use(express.static(path.join(__dirname, 'client', 'dist')));
+app.use(express.static(path.join(__dirname, 'client', 'dist')));
 
 
 app.get('/ping', (req, res) => {
@@ -41,9 +41,9 @@ app.get('/ping', (req, res) => {
 app.use("/api/", stocksRoute)
 app.use("/api/auth/", authRoute)
 app.use("/api/notification", notificationRoute)
-// app.get('*', (req, res) => {
-//   res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
-// });
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+});
 
 
 // Start the server

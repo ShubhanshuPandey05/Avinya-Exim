@@ -27,8 +27,8 @@ export default function AddSale() {
     async function fetchItems() {
       try {
         showLoading();
-        // const response = await fetch("http://localhost:8000/api/get-order-items", {
-        const response = await fetch(`http://localhost:8000/api/get-stock/${city}`, {
+        const response = await fetch("/api/get-stock/${city}", {
+        // const response = await fetch(`http://localhost:8000/api/get-stock/${city}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -41,12 +41,12 @@ export default function AddSale() {
 
       } catch (error) {
         console.error("Error fetching item names:", error);
-        // toast.error('No items fetched try again later')
-        // let token = getCookie("jwt")
-        // if (!token) {
-        //   localStorage.removeItem("authUser");
-        //   window.location.reload();
-        // }
+        toast.error('No items fetched try again later')
+        let token = getCookie("jwt")
+        if (!token) {
+          localStorage.removeItem("authUser");
+          window.location.reload();
+        }
         hideLoading();
       }
     }
@@ -110,8 +110,8 @@ export default function AddSale() {
     showLoading();
     try {
       console.log(items);
-      // const response = await fetch("/api/update-spreadsheet", {
-      const response = await fetch("http://localhost:8000/api/add-sales", {
+      const response = await fetch("/api/add-sales", {
+      // const response = await fetch("http://localhost:8000/api/add-sales", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ personName, partyName, items }),
@@ -120,14 +120,16 @@ export default function AddSale() {
 
       if (response.ok) {
         setItems([{ itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", stockId: "" }]);
+        setPersonName("")
+        setPartyName("")
         setShowSuccessModal(true);
       } else {
-        // const jwt = getCookie('jwt');
-        // if (!jwt) {
-        //   localStorage.removeItem("authUser");
-        //   window.location.reload();
-        //   toast.error("Please login again");
-        // }
+        const jwt = getCookie('jwt');
+        if (!jwt) {
+          localStorage.removeItem("authUser");
+          window.location.reload();
+          toast.error("Please login again");
+        }
       }
       setShowConfirmModal(false)
     } catch (error) {

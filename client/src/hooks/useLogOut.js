@@ -9,7 +9,7 @@ const useLogOut = () => {
   const logOut = async () => {
     localStorage.removeItem('authUser');
     setIsAuth(false);
-    toast.success(message.message);
+    toast.success("LogOut Successfully");
     navigate('/login');
   };
 

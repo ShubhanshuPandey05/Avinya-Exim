@@ -21,7 +21,8 @@ const YourStocks = () => {
     const fetchOrders = async () => {
       showLoading();
       try {
-        const response = await fetch(`http://localhost:8000/api/get-stock/${city}`, {
+        const response = await fetch(`/api/get-stock/${city}`, {
+        // const response = await fetch(`http://localhost:8000/api/get-stock/${city}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -45,7 +46,8 @@ const YourStocks = () => {
 
     const gettingRecievingStock = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/get-stockRecieved", {
+        const response = await fetch("/api/get-stockRecieved", {
+        // const response = await fetch("http://localhost:8000/api/get-stockRecieved", {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",
@@ -72,7 +74,8 @@ const YourStocks = () => {
   const sendToTransport = async (stockId) => {
     showLoading();
     try {
-      const response = await fetch("http://localhost:8000/api/stocks-dispatching", {
+      const response = await fetch("/api/stocks-dispatching", {
+      // const response = await fetch("http://localhost:8000/api/stocks-dispatching", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -100,7 +103,8 @@ const YourStocks = () => {
   const recieveFromTransport = async (stockId) => {
     showLoading();
     try {
-      const response = await fetch("http://localhost:8000/api/stocks-recieving", {
+      // const response = await fetch("http://localhost:8000/api/stocks-recieving", {
+      const response = await fetch("/api/stocks-recieving", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

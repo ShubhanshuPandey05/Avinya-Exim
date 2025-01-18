@@ -60,7 +60,8 @@ function App() {
         });
 
         // Send the subscription to your backend to save it
-        const res = await fetch("http://localhost:8000/api/notification/subscribe", {
+        const res = await fetch("/api/notification/subscribe", {
+        // const res = await fetch("http://localhost:8000/api/notification/subscribe", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

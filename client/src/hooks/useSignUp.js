@@ -16,8 +16,8 @@ const useSignUp = () => {
         if (!success) return;
         showLoading();
 
-        // let response = await fetch("/api/auth/signUp/", {
-        let response = await fetch("http://localhost:8000/api/auth/signUp/", {
+        let response = await fetch("/api/auth/signUp/", {
+        // let response = await fetch("http://localhost:8000/api/auth/signUp/", {
             method: "post",
             headers: {
                 "Content-Type": "application/json",
