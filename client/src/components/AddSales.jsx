@@ -22,7 +22,7 @@ export default function AddSale() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [itemOptions, setItemOptions] = useState([]);
   const { showLoading, hideLoading } = useLoading();
-  const [fetch,setfetch] = useState(false);
+  const [getStock,setGetStock] = useState(false);
 
 
 
@@ -54,7 +54,7 @@ export default function AddSale() {
       }
     }
     fetchItems();
-  }, [fetch]);
+  }, [getStock]);
 
 
   const handleItemChange = (index, field, value) => {
@@ -139,7 +139,7 @@ export default function AddSale() {
       console.error("Error updating spreadsheet:", error);
       setShowConfirmModal(false)
     }
-    setfetch(!fetch)
+    setGetStock(!getStock)
     hideLoading();
   };
 
