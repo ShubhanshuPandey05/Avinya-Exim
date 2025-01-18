@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useLoading } from "../context/LoadingContext";
+import { use } from "react";
 
 export default function AddSale() {
 
@@ -21,6 +22,8 @@ export default function AddSale() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [itemOptions, setItemOptions] = useState([]);
   const { showLoading, hideLoading } = useLoading();
+  const [fetch,setfetch] = useState(false);
+
 
 
   useEffect(() => {
@@ -51,7 +54,7 @@ export default function AddSale() {
       }
     }
     fetchItems();
-  }, []);
+  }, [fetch]);
 
 
   const handleItemChange = (index, field, value) => {
@@ -136,6 +139,7 @@ export default function AddSale() {
       console.error("Error updating spreadsheet:", error);
       setShowConfirmModal(false)
     }
+    setfetch(!fetch)
     hideLoading();
   };
 
