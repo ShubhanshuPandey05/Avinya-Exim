@@ -285,8 +285,8 @@ export default function AddStocks() {
       {showConfirmModal && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
-            <h2 className="text-xl font-semibold mb-4 text-gray-700">Confirm Your Order</h2>
-            <p className="text-gray-600">Are you sure you want to place this order?</p>
+            <h2 className="text-xl font-semibold mb-4 text-gray-700">Confirm Your Stock</h2>
+            <p className="text-gray-600">Are you sure you want to add this Stocks?</p>
             <div className="mt-4 flex justify-between">
               <button
                 onClick={() => setShowConfirmModal(false)}
@@ -309,8 +309,8 @@ export default function AddStocks() {
       {showSuccessModal && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
-            <h2 className="text-xl font-semibold mb-4 text-gray-700">Order Successfully Placed</h2>
-            <p className="text-gray-600">Your order has been placed successfully!</p>
+            <h2 className="text-xl font-semibold mb-4 text-gray-700">Stock Added Successfully</h2>
+            <p className="text-gray-600">Your stock has been added successfully!</p>
             <div className="mt-4 flex justify-center">
               <button
                 onClick={() => setShowSuccessModal(false)}

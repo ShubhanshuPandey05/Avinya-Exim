@@ -239,7 +239,7 @@ const YourStocks = () => {
                 }`}
             >
               <div className={`col-span-1 ${order[14] === "Yes" || order[14] ==="yes" ? "text-right" : "text-left"} pr-2 font-bold`}>
-                Stock Id: <span className="font-bold">{order[0]}</span>
+                Id: <span className="font-bold">{order[0]}</span>
               </div>
 
               {order[14] === "yes" || order[14] === "Yes" ? (
@@ -251,7 +251,7 @@ const YourStocks = () => {
               ):""}
 
               <div className="flex justify-between items-center mb-3">
-                <h3 className="text-l font-bold text-blue-800">{order[3]}</h3>
+                <h3 className="text-l font-bold text-blue-800">Bell no.{order[3]}</h3>
                 <div className={`text-sm font-semibold px-3 py-1 rounded-full shadow-md bg-green-100 text-green-500`}>
                   {order[10]}
                 </div>
@@ -277,7 +277,7 @@ const YourStocks = () => {
                     <div
                       className={`text-base right-4 bottom-4 px-3 py-1 rounded-xl flex justify-center text-center items-center shadow-md bg-yellow-100 text-black`}
                     >
-                      Balanced Qty: <span className="font-bold"> {order[13]}</span>
+                      Bal. Qty.: <span className="font-bold"> {order[13]}</span>
                     </div>
                   </div>
                 </div>
@@ -324,8 +324,8 @@ const YourStocks = () => {
         {showSuccessModal && (
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex justify-center items-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
-              <h2 className="text-xl font-semibold mb-4 text-gray-700">Order Successfully Dispatched</h2>
-              <p className="text-gray-600">Your order has been dispatched successfully!</p>
+              <h2 className="text-xl font-semibold mb-4 text-gray-700">Stock Successfully Dispatched</h2>
+              <p className="text-gray-600">Your stock has been dispatched successfully!</p>
               <div className="mt-4 flex justify-center">
                 <button
                   onClick={onDispatchSuccess}
