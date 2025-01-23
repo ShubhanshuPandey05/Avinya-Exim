@@ -16,13 +16,18 @@ const YourStocks = () => {
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState(null);
   const { showLoading, hideLoading } = useLoading();
+  const [isTableView, setIsTableView] = useState(false);
+
+  const toggleView = () => {
+    setIsTableView(!isTableView);
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
       showLoading();
       try {
         const response = await fetch(`/api/get-stock/${city}`, {
-        // const response = await fetch(`http://localhost:8000/api/get-stock/${city}`, {
+          // const response = await fetch(`http://localhost:8000/api/get-stock/${city}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -37,7 +42,7 @@ const YourStocks = () => {
         const data = await response.json();
         setOrders(data.data || []);
       } catch (err) {
-        setError(err.message || "Failed to fetch orders.");
+        setError(err.message || "Failed to fetch Stocks.");
       } finally {
         hideLoading();
       }
@@ -47,7 +52,7 @@ const YourStocks = () => {
     const gettingRecievingStock = async () => {
       try {
         const response = await fetch("/api/get-stockRecieved", {
-        // const response = await fetch("http://localhost:8000/api/get-stockRecieved", {
+          // const response = await fetch("http://localhost:8000/api/get-stockRecieved", {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",
@@ -63,7 +68,7 @@ const YourStocks = () => {
       }
     }
 
-    if(city == 'Bangladesh'){
+    if (city == 'Bangladesh') {
       gettingRecievingStock();
     }
 
@@ -75,7 +80,7 @@ const YourStocks = () => {
     showLoading();
     try {
       const response = await fetch("/api/stocks-dispatching", {
-      // const response = await fetch("http://localhost:8000/api/stocks-dispatching", {
+        // const response = await fetch("http://localhost:8000/api/stocks-dispatching", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -138,6 +143,144 @@ const YourStocks = () => {
   };
 
   return (
+
+    // <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
+    //   <div className="flex justify-between items-center mb-6">
+    //     <h2 className="text-3xl font-bold text-gray-800">
+    //       {city === "Bangladesh" ? "Receiving Stocks" : "My Stocks"}
+    //     </h2>
+    //     <button
+    //       onClick={toggleView}
+    //       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+    //     >
+    //       {isTableView ? "Switch to Card View" : "Switch to Table View"}
+    //     </button>
+    //   </div>
+
+    //   {isTableView ? (
+    //     // Table View
+    //     <div className="overflow-x-auto bg-white shadow-md rounded-lg p-4">
+    //       <table className="min-w-full border-collapse border border-gray-300">
+    //         <thead className="bg-gray-200">
+    //           <tr>
+    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+    //               Stock ID
+    //             </th>
+    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+    //               Bale No.
+    //             </th>
+    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+    //               Party Name
+    //             </th>
+    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+    //               Color
+    //             </th>
+    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+    //               Quantity (Mtr)
+    //             </th>
+    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+    //               Pcs
+    //             </th>
+    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+    //               Status
+    //             </th>
+    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+    //               Bal. Qty
+    //             </th>
+    //             {city === "Kolkata" && (
+    //               <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+    //                 Actions
+    //               </th>
+    //             )}
+    //           </tr>
+    //         </thead>
+    //         <tbody>
+    //           {orders.map((order, index) => (
+    //             <tr
+    //               key={index}
+    //               className={`${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"}`}
+    //             >
+    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+    //                 {order[0]}
+    //               </td>
+    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+    //                 {order[3]}
+    //               </td>
+    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+    //                 {order[4]}
+    //               </td>
+    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+    //                 {order[5]}
+    //               </td>
+    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+    //                 {order[7]}
+    //               </td>
+    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+    //                 {order[6]}
+    //               </td>
+    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+    //                 {order[15]}
+    //               </td>
+    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+    //                 {order[13] + " Mtr, " + order[14] + " Pcs"}
+    //               </td>
+    //               {city === "Kolkata" && (
+    //                 <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+    //                   <button
+    //                     className="bg-blue-700 text-white px-3 py-1 rounded-lg"
+    //                     onClick={() => onConfirmDispatch(order[0])}
+    //                   >
+    //                     Dispatch
+    //                   </button>
+    //                 </td>
+    //               )}
+    //             </tr>
+    //           ))}
+    //         </tbody>
+    //       </table>
+    //     </div>
+    //   ) : (
+    //     // Card View
+    //     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    //       {orders.map((order, index) => (
+    //         <div
+    //           key={index}
+    //           className={`rounded-lg p-4 shadow-md duration-300 transform hover:-translate-y-2 ${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"
+    //             }`}
+    //         >
+    //           {/* Card view content */}
+    //           <div>
+    //             <h3 className="text-lg font-bold text-blue-800">
+    //               Bale no.{order[3]}
+    //             </h3>
+    //             <div className="text-gray-600 mt-2">
+    //               <div className="font-bold text-lg">{order[4]}</div>
+    //               <div className="text-sm text-gray-600">
+    //                 Color: {order[5]}, Quantity: {order[7]} Mtr, Pcs: {order[6]}
+    //               </div>
+    //               <div className="text-sm text-gray-600">
+    //                 Bal. Qty: {order[13] + " Mtr, " + order[14] + " Pcs"}
+    //               </div>
+    //             </div>
+    //           </div>
+    //         </div>
+    //       ))}
+    //     </div>
+    //   )}
+    // </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
     <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
 
       {
@@ -149,7 +292,7 @@ const YourStocks = () => {
           {error && <p className="text-center text-red-500">{error}</p>}
 
           {orders.length === 0 && !error && (
-            <p className="text-center text-gray-600">No orders found.</p>
+            <p className="text-center text-gray-600">No Stocks Found.</p>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 mb-20 lg:grid-cols-3 gap-6">
@@ -159,17 +302,17 @@ const YourStocks = () => {
                 className={`rounded-lg p-4 shadow-md duration-300 transform hover:-translate-y-2 ${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"
                   }`}
               >
-                <div className={`col-span-1 ${order[14] === "Yes" || order[14] ==="yes" ? "text-right" : "text-left"} pr-2 font-bold`}>
+                <div className={`col-span-1 ${order[15] === "Yes" || order[15] === "yes" ? "text-right" : "text-left"} pr-2 font-bold`}>
                   Stock Id: <span className="font-bold">{order[0]}</span>
                 </div>
 
-                {order[14] === "yes" || order[14] === "Yes" ? (
+                {order[15] === "yes" || order[15] === "Yes" ? (
                   <div
                     className={`absolute top-5 -left-2 bg-red-600 text-white text-xs font-semibold py-1 px-3 transform -translate-y-3 -translate-x-3 rotate-[-42deg] shadow-md`}
                   >
                     Dispatched
                   </div>
-                ):""}
+                ) : ""}
 
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="text-l font-bold text-blue-800">{order[3]}</h3>
@@ -185,12 +328,12 @@ const YourStocks = () => {
                     <div className="text-sm font-semibold text-gray-600 w-fit">Quantity: {order[7]} Mtr</div>
                     <div className="text-sm font-semibold text-gray-600 w-fit">Pcs: {order[6]}</div>
                   </div>
-                  {order[14] === "yes" || order[14] === "Yes" ? (
+                  {order[15] === "yes" || order[15] === "Yes" ? (
                     <div className="flex space-x-8 mt-2">
                       <div className="text-gray-600 font-semibold w-1/2 text-sm">Dispatched Date: {order[11]}</div>
                       <div className="font-semibold text-gray-600 w-1/2 text-sm">Received Date: {order[12]}</div>
                     </div>
-                  ):""}
+                  ) : ""}
                   <div className="flex justify-between items-center mt-2">
                     <div className="text-gray-600 italic text-sm">{order[1]}</div>
                     <div className="flex justify-center items-center space-x-4">
@@ -198,7 +341,7 @@ const YourStocks = () => {
                       <div
                         className={`text-base right-4 bottom-4 px-3 py-1 rounded-xl flex justify-center text-center items-center shadow-md bg-yellow-100 text-black`}
                       >
-                        Balanced Qty: <span className="font-bold"> {order[13]}</span>
+                        Bal. Qty.: <span className="font-bold"> {order[13] + "Mtr" + "," + order[14] + "Pcs"}</span>
                       </div>
                     </div>
                   </div>
@@ -238,20 +381,20 @@ const YourStocks = () => {
               className={`rounded-lg p-4 shadow-md duration-300 transform hover:-translate-y-2 ${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"
                 }`}
             >
-              <div className={`col-span-1 ${order[14] === "Yes" || order[14] ==="yes" ? "text-right" : "text-left"} pr-2 font-bold`}>
+              <div className={`col-span-1 ${order[15] === "Yes" || order[15] === "yes" ? "text-right" : "text-left"} pr-2 font-bold`}>
                 Id: <span className="font-bold">{order[0]}</span>
               </div>
 
-              {order[14] === "yes" || order[14] === "Yes" ? (
+              {order[15] === "yes" || order[15] === "Yes" ? (
                 <div
                   className={`absolute top-5 -left-2 bg-red-600 text-white text-xs font-semibold py-1 px-3 transform -translate-y-3 -translate-x-3 rotate-[-42deg] shadow-md`}
                 >
                   Dispatched
                 </div>
-              ):""}
+              ) : ""}
 
               <div className="flex justify-between items-center mb-3">
-                <h3 className="text-l font-bold text-blue-800">Bell no.{order[3]}</h3>
+                <h3 className="text-l font-bold text-blue-800">Bale no.{order[3]}</h3>
                 <div className={`text-sm font-semibold px-3 py-1 rounded-full shadow-md bg-green-100 text-green-500`}>
                   {order[10]}
                 </div>
@@ -264,12 +407,12 @@ const YourStocks = () => {
                   <div className="text-sm font-semibold text-gray-600 w-fit">Quantity: {order[7]} Mtr</div>
                   <div className="text-sm font-semibold text-gray-600 w-fit">Pcs: {order[6]}</div>
                 </div>
-                {order[14] === "yes" || order[14] === "Yes" ? (
+                {order[15] === "yes" || order[15] === "Yes" ? (
                   <div className="flex space-x-8 mt-2">
                     <div className="text-gray-600 font-semibold w-1/2 text-sm">Dispatched Date: {order[11]}</div>
                     <div className="font-semibold text-gray-600 w-1/2 text-sm">Received Date: {order[12]}</div>
                   </div>
-                ):""}
+                ) : ""}
                 <div className="flex justify-between items-center mt-2">
                   <div className="text-gray-600 italic text-sm">{order[1]}</div>
                   <div className="flex justify-center items-center space-x-4">
@@ -277,7 +420,7 @@ const YourStocks = () => {
                     <div
                       className={`text-base right-4 bottom-4 px-3 py-1 rounded-xl flex justify-center text-center items-center shadow-md bg-yellow-100 text-black`}
                     >
-                      Bal. Qty.: <span className="font-bold"> {order[13]}</span>
+                      Bal. Qty.: <span className="font-bold"> {order[13] + "Mtr" + "," + order[14] + "Pcs"}</span>
                     </div>
                   </div>
                 </div>

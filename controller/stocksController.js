@@ -164,7 +164,10 @@ export const addStocks = async (req, res) => {
         "Kolkata",
         "",
         "",
-        item.quantity
+        item.quantity,
+        item.pcs,
+        "",
+        item.weight
       ]
     });
 
@@ -324,13 +327,14 @@ export const stockDispatched = async (req, res) => {
         new Date().toLocaleDateString("en-IN", options), // Column L (Dispatch Date)
         null, // Column M (if you don’t want to change it)
         null, // Column N (if you don’t want to change it)
-        "yes", // Column O (Dispatched Status)
+        null, // Column O (if you don’t want to change it)
+        "yes", // Column P (Dispatched Status)
       ],
     ];
 
     const updateResponse = await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `Main Stock!K${rowIndex}:O${rowIndex}`, // Specific row to update
+      range: `Main Stock!K${rowIndex}:P${rowIndex}`, // Specific row to update
       valueInputOption: "RAW", // Use "USER_ENTERED" if you want Google Sheets to format the input
       requestBody: {
         values: updatedValues,
@@ -396,10 +400,10 @@ export const stockRecieved = async (req, res) => {
     // Update relevant cells
     rows[rowIndex][12] = new Date().toLocaleDateString("en-IN", options); // Update Date
     rows[rowIndex][10] = "Bangladesh"; // Update City
-    rows[rowIndex][14] = ""; // Clear Dispatched field
+    rows[rowIndex][15] = ""; // Clear Dispatched field
 
     // Update the spreadsheet
-    const updateRange = `Main Stock!A${rowIndex + 1}:O${rowIndex + 1}`; // Adjust range based on row
+    const updateRange = `Main Stock!A${rowIndex + 1}:P${rowIndex + 1}`; // Adjust range based on row
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: updateRange,
@@ -480,7 +484,11 @@ export const addSales = async (req, res) => {
     const client = await auth.getClient();
     const sheets = google.sheets({ version: "v4", auth: client });
 
-    const { items, partyName, personName } = req.body;
+    const { items, partyName, personName, contactNo } = req.body;
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({ error: "No items provided for sale." });
+    }
 
     let newSales = [];
     const options = {
@@ -494,48 +502,54 @@ export const addSales = async (req, res) => {
       range: "Main Stock", // Sheet to read
     });
 
-    let rows = getResponse.data.values;
+    const rows = getResponse.data.values;
 
     if (!rows || rows.length === 0) {
-      console.error("No data found in the sheet.");
       return res.status(404).json({ error: "No data found in the sheet." });
     }
 
-    const targetColumnIndex = 0;// Assuming stockId is in the first column
-    let bellNo;
+    const targetColumnIndex = 0; // Assuming stockId is in the first column
+    let bellNo = null;
 
     for (const item of items) {
-      let rowIndex = -1;
+      const rowIndex = rows.findIndex(row => row[targetColumnIndex] === item.stockId) + 1; // Adjust for 1-based indexing
 
-      // Find the row index based on stockId
-      for (let i = 0; i < rows.length; i++) {
-        if (rows[i][targetColumnIndex] === item.stockId) {
-          rowIndex = i + 1; // Adjust for 1-based indexing in Google Sheets API
-          break;
-        }
-      }
-
-      if (rowIndex === -1) {
+      if (rowIndex === 0) {
         console.warn(`Stock ID ${item.stockId} not found.`);
         continue;
       }
 
-      // Update the balanced quantity
-      const balanceQty = parseInt(rows[rowIndex - 1][13]) || 0;
-      const updatedBalance = balanceQty - parseInt(item.quantity);
+      // Parse and update balance quantities
+      const balanceQty = parseInt(rows[rowIndex - 1][13], 10) || 0;
+      const updatedBalance = balanceQty - parseInt(item.quantity, 10);
       rows[rowIndex - 1][13] = updatedBalance.toString();
 
-      // Update the sheet for balance quantity
-      await sheets.spreadsheets.values.update({
+      const balancePcs = parseInt(rows[rowIndex - 1][14], 10) || 0;
+      const updatedPcsBalance = balancePcs - parseInt(item.pcs, 10);
+      rows[rowIndex - 1][15] = updatedPcsBalance.toString();
+
+      console.log(balancePcs,updatedPcsBalance);
+      
+
+      // Batch update for balance quantities
+      await sheets.spreadsheets.values.batchUpdate({
         spreadsheetId: SPREADSHEET_ID,
-        range: `Main Stock!N${rowIndex}`, // Column N for balanced quantity
-        valueInputOption: "RAW",
         requestBody: {
-          values: [[updatedBalance]], // New balanced quantity
+          data: [
+            {
+              range: `Main Stock!N${rowIndex}`, // Column N for balanced quantity
+              values: [[updatedBalance]],
+            },
+            {
+              range: `Main Stock!O${rowIndex}`, // Column P for balanced pieces
+              values: [[updatedPcsBalance]],
+            },
+          ],
+          valueInputOption: "RAW",
         },
       });
 
-      bellNo = rows[rowIndex - 1][3]
+      bellNo = rows[rowIndex - 1][3]; // Capture bell number
 
       // Create new sale record
       const newSale = [
@@ -544,6 +558,7 @@ export const addSales = async (req, res) => {
         new Date().toLocaleTimeString("en-IN", options), // Time
         partyName,
         personName,
+        contactNo,
         rows[rowIndex - 1][3], // Existing details
         rows[rowIndex - 1][4],
         rows[rowIndex - 1][5],
@@ -568,9 +583,10 @@ export const addSales = async (req, res) => {
         },
       });
 
-
-      sendNotification(bellNo)
-
+      // Send notification
+      if (bellNo) {
+        sendNotification(bellNo);
+      }
 
       res.status(200).json({
         message: "Spreadsheet updated successfully",

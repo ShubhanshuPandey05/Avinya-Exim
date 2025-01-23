@@ -15,6 +15,7 @@ export default function AddSale() {
   const [city] = useState(authUser.city || "");
   const [personName, setPersonName] = useState("");
   const [partyName, setPartyName] = useState("");
+  const [contactNo, setContactNo] = useState("");
   const [items, setItems] = useState([
     { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", stockId: "" },
   ]);
@@ -22,7 +23,9 @@ export default function AddSale() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [itemOptions, setItemOptions] = useState([]);
   const { showLoading, hideLoading } = useLoading();
-  const [getStock,setGetStock] = useState(false);
+  const [getStock, setGetStock] = useState(false);
+  const [availablePcs, setAvailablePcs] = useState("")
+  const [availableQty, setAvailableQty] = useState("")
 
 
 
@@ -31,7 +34,7 @@ export default function AddSale() {
       try {
         showLoading();
         const response = await fetch(`/api/get-stock/${city}`, {
-        // const response = await fetch(`http://localhost:8000/api/get-stock/${city}`, {
+          // const response = await fetch(`http://localhost:8000/api/get-stock/${city}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -68,21 +71,22 @@ export default function AddSale() {
           ...updatedItems[index],
           itemName: selectedItem[4],
           color: selectedItem[5],
-          pcs: selectedItem[6],
+          pcs: selectedItem[14],
           quantity: selectedItem[13],
           rate: selectedItem[8],
-          amount: selectedItem[9],
+          amount: (parseInt(selectedItem[13]) * parseInt(selectedItem[8])),
           stockId: selectedItem[0]
         };
+        setAvailablePcs(selectedItem[14])
+        setAvailableQty(selectedItem[13])
       }
     }
 
-    if (field === "quantity" || field === "rate") {
+    else if (field === "quantity" || field === "rate") {
       const quantity = updatedItems[index].quantity;
       const rate = updatedItems[index].rate;
       updatedItems[index].amount = quantity && rate ? (quantity * rate).toFixed(2) : "";
     }
-
     setItems(updatedItems);
   };
 
@@ -114,10 +118,10 @@ export default function AddSale() {
     try {
       console.log(items);
       const response = await fetch("/api/add-sales", {
-      // const response = await fetch("http://localhost:8000/api/add-sales", {
+        // const response = await fetch("http://localhost:8000/api/add-sales", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ personName, partyName, items }),
+        body: JSON.stringify({ partyName, personName, contactNo, items }),
         credentials: 'include',
       });
 
@@ -125,6 +129,7 @@ export default function AddSale() {
         setItems([{ itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", stockId: "" }]);
         setPersonName("")
         setPartyName("")
+        setContactNo("")
         setShowSuccessModal(true);
       } else {
         const jwt = getCookie('jwt');
@@ -153,7 +158,16 @@ export default function AddSale() {
           StockXo
         </h1>
         <form onSubmit={handleSubmit}>
-          <div className="md:grid-cols-2 grid gap-2 mt-10">
+          <div className="md:grid-cols-3 grid gap-2 mt-10">
+            <input
+              type="text"
+              name="partyName"
+              id="partyName"
+              value={partyName}
+              placeholder="Party Name"
+              onChange={((e) => { setPartyName(e.target.value) })}
+              className="border-gray-300 rounded-md p-2 border col-span-1 "
+            />
             <input
               type="text"
               name="personName"
@@ -165,12 +179,12 @@ export default function AddSale() {
             />
             <input
               type="text"
-              name="partyName"
-              id="partyName"
-              value={partyName}
-              placeholder="Party Name"
-              onChange={((e) => { setPartyName(e.target.value) })}
-              className="border-gray-300 rounded-md p-2 border col-span-1 "
+              name="ContactNo"
+              id="Contactno"
+              value={contactNo}
+              placeholder="Contact No."
+              onChange={((e) => { setContactNo(e.target.value) })}
+              className="border-gray-300 rounded-md p-2 border col-span-1"
             />
           </div>
 
@@ -191,12 +205,12 @@ export default function AddSale() {
                     onChange={(e) => handleItemChange(index, "bellNo", e.target.value)}
                     className="border-gray-300 rounded-md p-2 w-full"
                   >
-                    <option value="">Select Bell no. *</option>
+                    <option value="">Select Bale no. *</option>
                     {itemOptions ? itemOptions.map((option, i) => (
                       <option key={i} value={option[3]}>
                         {option[3]}
                       </option>
-                    )): ""}
+                    )) : ""}
                   </select>
                 </div>
 
@@ -237,6 +251,7 @@ export default function AddSale() {
                     className="border-gray-300 rounded-md p-2 w-full"
                     required
                   />
+                  <p className="italic text-sm">{"Avai. Pcs." + availablePcs}</p>
                 </div>
 
                 {/* Quantity */}
@@ -249,6 +264,7 @@ export default function AddSale() {
                     className="border-gray-300 rounded-md p-2 w-full"
                     required
                   />
+                  <p className="italic text-sm">{"Avai. Oty." + availableQty}</p>
                 </div>
 
                 {/* Rate */}
@@ -316,7 +332,7 @@ export default function AddSale() {
               type="submit"
               className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600"
             >
-              Submit Order
+              Submit
             </button>
           </div>
         </form>

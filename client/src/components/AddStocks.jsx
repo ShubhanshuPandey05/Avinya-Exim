@@ -11,7 +11,7 @@ export default function AddStocks() {
     userType: ""
   };
   const [items, setItems] = useState([
-    { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "" },
+    { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", weight: "" },
   ]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -25,7 +25,7 @@ export default function AddStocks() {
       try {
         showLoading();
         // const response = await fetch("http://localhost:8000/api/get-stockItems", {
-          const response = await fetch("/api/get-stockItems", {
+        const response = await fetch("/api/get-stockItems", {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -33,7 +33,7 @@ export default function AddStocks() {
         const data = await response.json();
         setItemOptions(data.data.map((item) => item["Item Names"]));
         // const response2 = await fetch("http://localhost:8000/api/get-stockColor", {
-          const response2 = await fetch("/api/get-stockColor", {
+        const response2 = await fetch("/api/get-stockColor", {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -78,7 +78,7 @@ export default function AddStocks() {
   };
 
   const handleAddItem = () => {
-    setItems([...items, { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "" }]);
+    setItems([...items, { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", weight: "" }]);
   };
 
   const handleRemoveItem = (index) => {
@@ -94,9 +94,10 @@ export default function AddStocks() {
   };
 
   const confirmOrder = async () => {
+    showLoading();
     try {
       const response = await fetch("/api/add-stocks", {
-      // const response = await fetch("http://localhost:8000/api/add-stocks", {
+        // const response = await fetch("http://localhost:8000/api/add-stocks", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items }),
@@ -104,7 +105,7 @@ export default function AddStocks() {
       });
 
       if (response.ok) {
-        setItems([{ itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "" }]);
+        setItems([{ itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", weight: "" }]);
         setShowSuccessModal(true);
       } else {
         const jwt = getCookie('jwt');
@@ -115,17 +116,19 @@ export default function AddStocks() {
         }
       }
       setShowConfirmModal(false)
+
     } catch (error) {
       console.error("Error updating spreadsheet:", error);
       setShowConfirmModal(false)
     }
+    hideLoading();
   };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100 px-4 pb-14">
       <div className="p-6 w-full max-w-6xl min-h-screen">
         <h1 className="text-4xl font-semibold md:font-bold text-center">
-          Avinaya Exim
+          Avinya Exim
         </h1>
         <h1 className="text-xl md:text-2xl font-semibold text-gray-500 mt-3 text-center md:font-bold">
           StockXo
@@ -143,7 +146,7 @@ export default function AddStocks() {
                 <div className="md:col-span-3 col-span-12">
                   <input
                     type="text"
-                    placeholder="Bell No. *"
+                    placeholder="Bale No. *"
                     value={item.bellNo}
                     onChange={(e) => handleItemChange(index, "bellNo", e.target.value)}
                     className="border-gray-300 rounded-md p-2 w-full"
@@ -208,8 +211,19 @@ export default function AddStocks() {
                   />
                 </div>
 
+                <div className="md:col-span-2 col-span-4">
+                  <input
+                    type="number"
+                    placeholder="Weight *"
+                    value={item.weight}
+                    onChange={(e) => handleItemChange(index, "weight", e.target.value)}
+                    className="border-gray-300 rounded-md p-2 w-full"
+                    required
+                  />
+                </div>
+
                 {/* Rate */}
-                <div className="md:col-span-3 col-span-4">
+                <div className="md:col-span-2 col-span-4">
                   <input
                     type="number"
                     placeholder="Rate"
