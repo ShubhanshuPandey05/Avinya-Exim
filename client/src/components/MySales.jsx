@@ -238,7 +238,6 @@ export default function MySales() {
             </tbody>
           </table>
         </div>
-
       </div>
     </div>
   )

@@ -152,7 +152,7 @@ export default function AddSale() {
           Avinya Exim
         </h1>
         <h1 className="text-xl md:text-2xl font-semibold text-gray-500 mt-3 text-center md:font-bold">
-          StockXo
+          Sale Voucher
         </h1>
         <form onSubmit={handleSubmit}>
           <div className="md:grid-cols-3 grid gap-2 mt-10">
