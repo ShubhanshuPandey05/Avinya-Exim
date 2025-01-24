@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLoading } from "../context/LoadingContext";
+import { Link } from "react-router-dom";
 
 const YourStocks = () => {
   const authUser = JSON.parse(localStorage.getItem("authUser")) || {
@@ -16,7 +17,7 @@ const YourStocks = () => {
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState(null);
   const { showLoading, hideLoading } = useLoading();
-  const [isTableView, setIsTableView] = useState(false);
+  const [isTableView, setIsTableView] = useState(true);
 
   const toggleView = () => {
     setIsTableView(!isTableView);
@@ -143,145 +144,36 @@ const YourStocks = () => {
   };
 
   return (
+    <div className="container mx-auto py-6 bg-gray-100 min-h-screen">
+      <div className="rounded-xl bottom-24 left-2 fixed z-50 bg-white">
+        <div className="flex items-center relative">
+          <button
+            className="relative w-24 h-12 border border-gray-300 rounded-md overflow-hidden"
+            onClick={toggleView}
+          >
+            {/* Background toggle animation */}
+            <div
+              className={`absolute top-0 h-full w-1/2 duration-200 bg-[#2563eb] ${isTableView ? "left-0" : "left-1/2"
+                }`}
+            ></div>
 
-    // <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
-    //   <div className="flex justify-between items-center mb-6">
-    //     <h2 className="text-3xl font-bold text-gray-800">
-    //       {city === "Bangladesh" ? "Receiving Stocks" : "My Stocks"}
-    //     </h2>
-    //     <button
-    //       onClick={toggleView}
-    //       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-    //     >
-    //       {isTableView ? "Switch to Card View" : "Switch to Table View"}
-    //     </button>
-    //   </div>
+            {/* Table view icon */}
+            <img
+              src="./tableView.png"
+              alt="Table View"
+              className={`w-6 h-6 absolute left-3 top-1/2 transform -translate-y-1/2 z-10 ${isTableView ? 'filter invert brightness-200' : ""}`}
+            />
 
-    //   {isTableView ? (
-    //     // Table View
-    //     <div className="overflow-x-auto bg-white shadow-md rounded-lg p-4">
-    //       <table className="min-w-full border-collapse border border-gray-300">
-    //         <thead className="bg-gray-200">
-    //           <tr>
-    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
-    //               Stock ID
-    //             </th>
-    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
-    //               Bale No.
-    //             </th>
-    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
-    //               Party Name
-    //             </th>
-    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
-    //               Color
-    //             </th>
-    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
-    //               Quantity (Mtr)
-    //             </th>
-    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
-    //               Pcs
-    //             </th>
-    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
-    //               Status
-    //             </th>
-    //             <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
-    //               Bal. Qty
-    //             </th>
-    //             {city === "Kolkata" && (
-    //               <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
-    //                 Actions
-    //               </th>
-    //             )}
-    //           </tr>
-    //         </thead>
-    //         <tbody>
-    //           {orders.map((order, index) => (
-    //             <tr
-    //               key={index}
-    //               className={`${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"}`}
-    //             >
-    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
-    //                 {order[0]}
-    //               </td>
-    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
-    //                 {order[3]}
-    //               </td>
-    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
-    //                 {order[4]}
-    //               </td>
-    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
-    //                 {order[5]}
-    //               </td>
-    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
-    //                 {order[7]}
-    //               </td>
-    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
-    //                 {order[6]}
-    //               </td>
-    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
-    //                 {order[15]}
-    //               </td>
-    //               <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
-    //                 {order[13] + " Mtr, " + order[14] + " Pcs"}
-    //               </td>
-    //               {city === "Kolkata" && (
-    //                 <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
-    //                   <button
-    //                     className="bg-blue-700 text-white px-3 py-1 rounded-lg"
-    //                     onClick={() => onConfirmDispatch(order[0])}
-    //                   >
-    //                     Dispatch
-    //                   </button>
-    //                 </td>
-    //               )}
-    //             </tr>
-    //           ))}
-    //         </tbody>
-    //       </table>
-    //     </div>
-    //   ) : (
-    //     // Card View
-    //     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    //       {orders.map((order, index) => (
-    //         <div
-    //           key={index}
-    //           className={`rounded-lg p-4 shadow-md duration-300 transform hover:-translate-y-2 ${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"
-    //             }`}
-    //         >
-    //           {/* Card view content */}
-    //           <div>
-    //             <h3 className="text-lg font-bold text-blue-800">
-    //               Bale no.{order[3]}
-    //             </h3>
-    //             <div className="text-gray-600 mt-2">
-    //               <div className="font-bold text-lg">{order[4]}</div>
-    //               <div className="text-sm text-gray-600">
-    //                 Color: {order[5]}, Quantity: {order[7]} Mtr, Pcs: {order[6]}
-    //               </div>
-    //               <div className="text-sm text-gray-600">
-    //                 Bal. Qty: {order[13] + " Mtr, " + order[14] + " Pcs"}
-    //               </div>
-    //             </div>
-    //           </div>
-    //         </div>
-    //       ))}
-    //     </div>
-    //   )}
-    // </div>
+            {/* Card view icon */}
+            <img
+              src="./cardView.png"
+              alt="Card View"
+              className={`w-6 h-6 absolute right-3 top-1/2 transform -translate-y-1/2 z-10 ${!isTableView ? 'filter invert brightness-200' : ""}`}
+            />
+          </button>
+        </div>
+      </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-    <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
 
       {
         city == "Bangladesh" && recievingStocks.length > 0 ? <div>
@@ -295,68 +187,133 @@ const YourStocks = () => {
             <p className="text-center text-gray-600">No Stocks Found.</p>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 mb-20 lg:grid-cols-3 gap-6">
-            {recievingStocks.map((order, index) => (
-              <div
-                key={index}
-                className={`rounded-lg p-4 shadow-md duration-300 transform hover:-translate-y-2 ${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"
-                  }`}
-              >
-                <div className={`col-span-1 ${order[15] === "Yes" || order[15] === "yes" ? "text-right" : "text-left"} pr-2 font-bold`}>
-                  Stock Id: <span className="font-bold">{order[0]}</span>
-                </div>
-
-                {order[15] === "yes" || order[15] === "Yes" ? (
-                  <div
-                    className={`absolute top-5 -left-2 bg-red-600 text-white text-xs font-semibold py-1 px-3 transform -translate-y-3 -translate-x-3 rotate-[-42deg] shadow-md`}
-                  >
-                    Dispatched
+          {isTableView ?
+            <div className="w-[100vw] overflow-auto p-2">
+              <table className="min-w-[95vw] mx-auto table-auto border-collapse border border-gray-300 shadow-md rounded-lg">
+                <thead>
+                  <tr className="bg-blue-700 text-white">
+                    <th className="border border-gray-300 px-4 py-2">Stock ID</th>
+                    <th className="border border-gray-300 px-4 py-2">Date</th>
+                    <th className="border border-gray-300 px-4 py-2">Bale No.</th>
+                    <th className="border border-gray-300 px-4 py-2">Item Name</th>
+                    <th className="border border-gray-300 px-4 py-2">Color</th>
+                    <th className="border border-gray-300 px-4 py-2">Pcs</th>
+                    <th className="border border-gray-300 px-4 py-2">Quantity</th>
+                    <th className="border border-gray-300 px-4 py-2">Rate</th>
+                    <th className="border border-gray-300 px-4 py-2">Amount</th>
+                    <th className="border border-gray-300 px-4 py-2">City</th>
+                    <th className="border border-gray-300 px-4 py-2">Bal. Qty</th>
+                    <th className="border border-gray-300 px-4 py-2">Dispatched</th>
+                    <th className="border border-gray-300 px-4 py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recievingStocks.map((order, index) => (
+                    <tr
+                      key={index}
+                      className={`border-t ${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"} hover:bg-gray-100`}
+                    >
+                      <td className="border border-gray-300 px-4 py-2">{order[0]}</td>
+                      <td className="border border-gray-300 px-4 py-2">{order[1]}</td>
+                      <td className="border border-gray-300 px-4 py-2">{order[3]}</td>
+                      <td className="border border-gray-300 px-4 py-2">{order[4]}</td>
+                      <td className="border border-gray-300 px-4 py-2">{order[5]}</td>
+                      <td className="border border-gray-300 px-4 py-2">{order[6]}</td>
+                      <td className="border border-gray-300 px-4 py-2">{order[7]} Mtr</td>
+                      <td className="border border-gray-300 px-4 py-2">{order[8]}</td>
+                      <td className="border border-gray-300 px-4 py-2 text-blue-600 font-semibold">{order[9]}</td>
+                      <td className="border border-gray-300 px-4 py-2">{order[10]}</td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {order[13]} Mtr, {order[14]} Pcs
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {order[15] === "yes" || order[15] === "Yes" ? (
+                          <>
+                            <div className="text-red-600 font-bold">Yes</div>
+                            <div className="text-sm text-gray-600">Dispatched: {order[11]}</div>
+                            <div className="text-sm text-gray-600">Received: {order[12]}</div>
+                          </>
+                        ) : (
+                          "No"
+                        )}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        <button
+                          className="bg-blue-700 text-white px-4 py-2 rounded-xl hover:bg-blue-800"
+                          onClick={() => recieveFromTransport(order[0])}
+                        >
+                          Receive
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            :
+            <div className="grid grid-cols-1 md:grid-cols-2 mb-20 lg:grid-cols-3 gap-6 p-2">
+              {recievingStocks.map((order, index) => (
+                <div
+                  key={index}
+                  className={`rounded-lg p-4 shadow-md duration-300 transform hover:-translate-y-2 ${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"
+                    }`}
+                >
+                  <div className={`col-span-1 ${order[15] === "Yes" || order[15] === "yes" ? "text-right" : "text-left"} pr-2 font-bold`}>
+                    Stock Id: <span className="font-bold">{order[0]}</span>
                   </div>
-                ) : ""}
 
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-l font-bold text-blue-800">{order[3]}</h3>
-                  <div className={`text-sm font-semibold px-3 py-1 rounded-full shadow-md bg-green-100 text-green-500`}>
-                    {order[10]}
-                  </div>
-                </div>
-
-                <div className="text-gray-700 mt-2">
-                  <div className="font-bold text-lg">{order[4]}</div>
-                  <div className="flex justify-between md:w-[75%]">
-                    <div className="text-sm text-gray-600 font-semibold w-fit">Color: {order[5]}</div>
-                    <div className="text-sm font-semibold text-gray-600 w-fit">Quantity: {order[7]} Mtr</div>
-                    <div className="text-sm font-semibold text-gray-600 w-fit">Pcs: {order[6]}</div>
-                  </div>
                   {order[15] === "yes" || order[15] === "Yes" ? (
-                    <div className="flex space-x-8 mt-2">
-                      <div className="text-gray-600 font-semibold w-1/2 text-sm">Dispatched Date: {order[11]}</div>
-                      <div className="font-semibold text-gray-600 w-1/2 text-sm">Received Date: {order[12]}</div>
+                    <div
+                      className={`absolute top-5 -left-2 bg-red-600 text-white text-xs font-semibold py-1 px-3 transform -translate-y-3 -translate-x-3 rotate-[-42deg] shadow-md`}
+                    >
+                      Dispatched
                     </div>
                   ) : ""}
-                  <div className="flex justify-between items-center mt-2">
-                    <div className="text-gray-600 italic text-sm">{order[1]}</div>
-                    <div className="flex justify-center items-center space-x-4">
-                      <div className="font-semibold text-blue-600">{order[9]}</div>
-                      <div
-                        className={`text-base right-4 bottom-4 px-3 py-1 rounded-xl flex justify-center text-center items-center shadow-md bg-yellow-100 text-black`}
-                      >
-                        Bal. Qty.: <span className="font-bold"> {order[13] + "Mtr" + "," + order[14] + "Pcs"}</span>
-                      </div>
+
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-l font-bold text-blue-800">{order[3]}</h3>
+                    <div className={`text-sm font-semibold px-3 py-1 rounded-full shadow-md bg-green-100 text-green-500`}>
+                      {order[10]}
                     </div>
                   </div>
-                  <div>
-                    <button
-                      className="w-32 bg-blue-700 text-white p-1 rounded-xl my-2"
-                      onClick={() => recieveFromTransport(order[0])}
-                    >
-                      Recieve
-                    </button>
+
+                  <div className="text-gray-700 mt-2">
+                    <div className="font-bold text-lg">{order[4]}</div>
+                    <div className="flex justify-between md:w-[75%]">
+                      <div className="text-sm text-gray-600 font-semibold w-fit">Color: {order[5]}</div>
+                      <div className="text-sm font-semibold text-gray-600 w-fit">Quantity: {order[7]} Mtr</div>
+                      <div className="text-sm font-semibold text-gray-600 w-fit">Pcs: {order[6]}</div>
+                    </div>
+                    {order[15] === "yes" || order[15] === "Yes" ? (
+                      <div className="flex space-x-8 mt-2">
+                        <div className="text-gray-600 font-semibold w-1/2 text-sm">Dispatched Date: {order[11]}</div>
+                        <div className="font-semibold text-gray-600 w-1/2 text-sm">Received Date: {order[12]}</div>
+                      </div>
+                    ) : ""}
+                    <div className="flex justify-between items-center mt-2">
+                      <div className="text-gray-600 italic text-sm">{order[1]}</div>
+                      <div className="flex justify-center items-center space-x-4">
+                        <div className="font-semibold text-blue-600">{order[9]}</div>
+                        <div
+                          className={`text-base right-4 bottom-4 px-3 py-1 rounded-xl flex justify-center text-center items-center shadow-md bg-yellow-100 text-black`}
+                        >
+                          Bal. Qty.: <span className="font-bold"> {order[13] + "Mtr" + "," + order[14] + "Pcs"}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <button
+                        className="w-32 bg-blue-700 text-white p-1 rounded-xl my-2"
+                        onClick={() => recieveFromTransport(order[0])}
+                      >
+                        Recieve
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          }
         </div> : ''
       }
 
@@ -374,70 +331,188 @@ const YourStocks = () => {
           <p className="text-center text-gray-600">No orders found.</p>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 mb-20 lg:grid-cols-3 gap-6">
-          {orders.map((order, index) => (
-            <div
-              key={index}
-              className={`rounded-lg p-4 shadow-md duration-300 transform hover:-translate-y-2 ${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"
-                }`}
-            >
-              <div className={`col-span-1 ${order[15] === "Yes" || order[15] === "yes" ? "text-right" : "text-left"} pr-2 font-bold`}>
-                Id: <span className="font-bold">{order[0]}</span>
-              </div>
-
-              {order[15] === "yes" || order[15] === "Yes" ? (
-                <div
-                  className={`absolute top-5 -left-2 bg-red-600 text-white text-xs font-semibold py-1 px-3 transform -translate-y-3 -translate-x-3 rotate-[-42deg] shadow-md`}
-                >
-                  Dispatched
+        {isTableView ?
+          <div className="w-[100vw] overflow-auto p-2">
+            <table className="min-w-[95vw] mx-auto border-collapse border border-gray-300">
+              <thead className="bg-gray-200">
+                <tr>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Stock ID
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Date
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Bale No.
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Item Name
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Color
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Pcs
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Quantity (Mtr)
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Rate
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Amount
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    City
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Bal. Pcs
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Bal. Qty
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Shipped Date
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                    Recieved Date
+                  </th>
+                  {city === "Kolkata" && (
+                    <th className="border border-gray-300 px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                      Actions
+                    </th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order, index) => (
+                  <tr
+                    key={index}
+                    className={`${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"}`}
+                  >
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+                      {order[0]}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+                      {order[1]}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+                      {order[3]}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+                      {order[4]}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+                      {order[5]}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-right text-gray-700">
+                      {order[6]}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-right text-gray-700">
+                      {order[7]}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-right text-gray-700">
+                      {order[8]}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-right text-gray-700">
+                      {order[9]}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+                      {order[10]}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-right text-gray-700">
+                      {order[14] + " Pcs"}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-right text-gray-700">
+                      {order[13] + " Mtr"}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+                      {order[11]}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+                      {order[12]}
+                    </td>
+                    {city === "Kolkata" && (
+                      <td className="border border-gray-300 px-4 py-2 text-sm text-gray-700">
+                        <button
+                          className="bg-blue-700 text-white px-3 py-1 rounded-lg"
+                          onClick={() => onConfirmDispatch(order[0])}
+                        >
+                          Dispatch
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div> :
+          <div className="grid grid-cols-1 md:grid-cols-2 mb-20 lg:grid-cols-3 gap-6 p-2">
+            {orders.map((order, index) => (
+              <div
+                key={index}
+                className={`rounded-lg p-4 shadow-md duration-300 transform hover:-translate-y-2 ${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"
+                  }`}
+              >
+                <div className={`col-span-1 ${order[15] === "Yes" || order[15] === "yes" ? "text-right" : "text-left"} pr-2 font-bold`}>
+                  Id: <span className="font-bold">{order[0]}</span>
                 </div>
-              ) : ""}
 
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-l font-bold text-blue-800">Bale no.{order[3]}</h3>
-                <div className={`text-sm font-semibold px-3 py-1 rounded-full shadow-md bg-green-100 text-green-500`}>
-                  {order[10]}
-                </div>
-              </div>
-
-              <div className="text-gray-700 mt-2">
-                <div className="font-bold text-lg">{order[4]}</div>
-                <div className="flex justify-between md:w-[75%]">
-                  <div className="text-sm text-gray-600 font-semibold w-fit">Color: {order[5]}</div>
-                  <div className="text-sm font-semibold text-gray-600 w-fit">Quantity: {order[7]} Mtr</div>
-                  <div className="text-sm font-semibold text-gray-600 w-fit">Pcs: {order[6]}</div>
-                </div>
                 {order[15] === "yes" || order[15] === "Yes" ? (
-                  <div className="flex space-x-8 mt-2">
-                    <div className="text-gray-600 font-semibold w-1/2 text-sm">Dispatched Date: {order[11]}</div>
-                    <div className="font-semibold text-gray-600 w-1/2 text-sm">Received Date: {order[12]}</div>
+                  <div
+                    className={`absolute top-5 -left-2 bg-red-600 text-white text-xs font-semibold py-1 px-3 transform -translate-y-3 -translate-x-3 rotate-[-42deg] shadow-md`}
+                  >
+                    Dispatched
                   </div>
                 ) : ""}
-                <div className="flex justify-between items-center mt-2">
-                  <div className="text-gray-600 italic text-sm">{order[1]}</div>
-                  <div className="flex justify-center items-center space-x-4">
-                    <div className="font-semibold text-blue-600">{order[9]}</div>
-                    <div
-                      className={`text-base right-4 bottom-4 px-3 py-1 rounded-xl flex justify-center text-center items-center shadow-md bg-yellow-100 text-black`}
-                    >
-                      Bal. Qty.: <span className="font-bold"> {order[13] + "Mtr" + "," + order[14] + "Pcs"}</span>
-                    </div>
+
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-l font-bold text-blue-800">Bale no.{order[3]}</h3>
+                  <div className={`text-sm font-semibold px-3 py-1 rounded-full shadow-md bg-green-100 text-green-500`}>
+                    {order[10]}
                   </div>
                 </div>
-                {city === "Kolkata" && (
-                  <div>
-                    <button
-                      className="w-32 bg-blue-700 text-white p-1 rounded-xl my-2"
-                      onClick={() => onConfirmDispatch(order[0])}
-                    >
-                      Dispatch
-                    </button>
+
+                <div className="text-gray-700 mt-2">
+                  <div className="font-bold text-lg">{order[4]}</div> {/*City*/}
+                  <div className="flex justify-between md:w-[75%]">
+                    <div className="text-sm text-gray-600 font-semibold w-fit">Color: {order[5]}</div>
+                    <div className="text-sm font-semibold text-gray-600 w-fit">Quantity: {order[7]} Mtr</div>
+                    <div className="text-sm font-semibold text-gray-600 w-fit">Pcs: {order[6]}</div>
                   </div>
-                )}
+                  {order[15] === "yes" || order[15] === "Yes" ? (
+                    <div className="flex space-x-8 mt-2">
+                      <div className="text-gray-600 font-semibold w-1/2 text-sm">Dispatched Date: {order[11]}</div>
+                      <div className="font-semibold text-gray-600 w-1/2 text-sm">Received Date: {order[12]}</div>
+                    </div>
+                  ) : ""}
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="text-gray-600 italic text-sm">{order[1]}</div> {/*Date*/}
+                    <div className="flex justify-center items-center space-x-4">
+                      <div className="font-semibold text-blue-600">{order[9]}</div> {/*Amount*/}
+                      <div
+                        className={`text-base right-4 bottom-4 px-3 py-1 rounded-xl flex justify-center text-center items-center shadow-md bg-yellow-100 text-black`}
+                      >
+                        Bal. Qty.: <span className="font-bold"> {order[13] + "Mtr" + "," + order[14] + "Pcs"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {city === "Kolkata" && (
+                    <div>
+                      <button
+                        className="w-32 bg-blue-700 text-white p-1 rounded-xl my-2"
+                        onClick={() => onConfirmDispatch(order[0])}
+                      >
+                        Dispatch
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        }
 
         {/* Confirmation Modal */}
         {showConfirmModal && (
@@ -486,3 +561,6 @@ const YourStocks = () => {
 };
 
 export default YourStocks;
+
+
+//  TODO: fixing the mapping of the column

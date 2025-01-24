@@ -261,10 +261,57 @@ export const getStocksByCity = async (req, res) => {
     }
     // console.log(filteredRows)
 
+    filteredRows = filteredRows.reverse()
     res.json({ data: filteredRows });
   } catch (error) {
     console.error("Error reading Google Sheets:", error);
     res.status(500).json({ error: "Failed to read the Google Sheet." });
+  }
+};
+
+
+
+
+
+// ..........Get-Sales...................................................................................................................................
+
+
+
+
+
+export const getSales = async (req, res) => {
+  const client = await auth.getClient();
+  const sheets = google.sheets({ version: "v4", auth: client });
+  const { city } = req.params;
+
+  if (city == 'Surat') {
+    try {
+      const result = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: "Sales",
+      });
+
+
+      const rows = result.data.values;
+
+      if (!rows || rows.length === 0) {
+        return res.status(404).json({ message: "No data found." });
+      }
+
+      let filteredRows;
+
+      filteredRows = rows.slice(1).reverse()
+
+
+      if (filteredRows.length === 0) {
+        return res.status(404).json({ message: `No Stock in this ${city}` });
+      }
+
+      res.json({ data: filteredRows });
+    } catch (error) {
+      console.error("Error reading Google Sheets:", error);
+      res.status(500).json({ error: "Failed to read the Google Sheet." });
+    }
   }
 };
 
@@ -528,8 +575,8 @@ export const addSales = async (req, res) => {
       const updatedPcsBalance = balancePcs - parseInt(item.pcs, 10);
       rows[rowIndex - 1][15] = updatedPcsBalance.toString();
 
-      console.log(balancePcs,updatedPcsBalance);
-      
+      // console.log(balancePcs, updatedPcsBalance);
+
 
       // Batch update for balance quantities
       await sheets.spreadsheets.values.batchUpdate({

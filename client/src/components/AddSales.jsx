@@ -17,16 +17,13 @@ export default function AddSale() {
   const [partyName, setPartyName] = useState("");
   const [contactNo, setContactNo] = useState("");
   const [items, setItems] = useState([
-    { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", stockId: "" },
+    { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", stockId: "", availablePcs: "", availableQty: "" },
   ]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [itemOptions, setItemOptions] = useState([]);
   const { showLoading, hideLoading } = useLoading();
   const [getStock, setGetStock] = useState(false);
-  const [availablePcs, setAvailablePcs] = useState("")
-  const [availableQty, setAvailableQty] = useState("")
-
 
 
   useEffect(() => {
@@ -75,10 +72,10 @@ export default function AddSale() {
           quantity: selectedItem[13],
           rate: selectedItem[8],
           amount: (parseInt(selectedItem[13]) * parseInt(selectedItem[8])),
-          stockId: selectedItem[0]
+          stockId: selectedItem[0],
+          availablePcs: selectedItem[14],
+          availableQty: selectedItem[13]
         };
-        setAvailablePcs(selectedItem[14])
-        setAvailableQty(selectedItem[13])
       }
     }
 
@@ -167,6 +164,7 @@ export default function AddSale() {
               placeholder="Party Name"
               onChange={((e) => { setPartyName(e.target.value) })}
               className="border-gray-300 rounded-md p-2 border col-span-1 "
+              required
             />
             <input
               type="text"
@@ -185,6 +183,8 @@ export default function AddSale() {
               placeholder="Contact No."
               onChange={((e) => { setContactNo(e.target.value) })}
               className="border-gray-300 rounded-md p-2 border col-span-1"
+              // maxLength="10"
+              required
             />
           </div>
 
@@ -250,8 +250,9 @@ export default function AddSale() {
                     onChange={(e) => handleItemChange(index, "pcs", e.target.value)}
                     className="border-gray-300 rounded-md p-2 w-full"
                     required
+                    max={item.availablePcs}
                   />
-                  <p className="italic text-sm">{"Avai. Pcs." + availablePcs}</p>
+                  <p className="italic text-sm">{"Bal. Pcs." + item.availablePcs}</p>
                 </div>
 
                 {/* Quantity */}
@@ -263,8 +264,9 @@ export default function AddSale() {
                     onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
                     className="border-gray-300 rounded-md p-2 w-full"
                     required
+                    max={item.availableQty}
                   />
-                  <p className="italic text-sm">{"Avai. Oty." + availableQty}</p>
+                  <p className="italic text-sm">{"Bal. Oty." + item.availableQty}</p>
                 </div>
 
                 {/* Rate */}
