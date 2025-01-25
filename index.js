@@ -22,10 +22,11 @@ app.use(cors({
 
 
 webPush.setVapidDetails(
-    'mailto:me@mail.com', // Contact email
+    'mailto:mee@mail.com', // Contact email
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
 );
+
 
 
 app.options('*', cors()); // Allow all preflight requests
