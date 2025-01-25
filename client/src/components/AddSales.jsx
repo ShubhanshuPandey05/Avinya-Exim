@@ -24,6 +24,32 @@ export default function AddSale() {
   const [itemOptions, setItemOptions] = useState([]);
   const { showLoading, hideLoading } = useLoading();
   const [getStock, setGetStock] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState({}); // Track dropdown visibility
+  const [filteredOptions, setFilteredOptions] = useState({}); // Track filtered options
+
+  // Handle search input changes
+  const handleSearchChange = (index, value) => {
+    handleItemChange(index, "bellNo", value); // Update selected value in the parent
+    const options = itemOptions.filter((option) =>
+      option[3].toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredOptions((prev) => ({
+      ...prev,
+      [index]: options,
+    }));
+  };
+
+  // Handle selecting an option
+  const handleSelectOption = (index, value) => {
+    console.log("hello", value)
+    handleItemChange(index, "bellNo", value); // Update selected value
+    setDropdownOpen((prev) => ({ ...prev, [index]: false })); // Close dropdown
+  };
+
+  // Toggle dropdown visibility
+  const toggleDropdownOpen = (index, isOpen) => {
+    setDropdownOpen((prev) => ({ ...prev, [index]: isOpen }));
+  };
 
 
   useEffect(() => {
@@ -164,7 +190,7 @@ export default function AddSale() {
               placeholder="Party Name"
               onChange={((e) => { setPartyName(e.target.value) })}
               className="border-gray-300 rounded-md p-2 border col-span-1 "
-              required
+              
             />
             <input
               type="text"
@@ -184,7 +210,7 @@ export default function AddSale() {
               onChange={((e) => { setContactNo(e.target.value) })}
               className="border-gray-300 rounded-md p-2 border col-span-1"
               // maxLength="10"
-              required
+              
             />
           </div>
 
@@ -199,20 +225,37 @@ export default function AddSale() {
               >
                 <input type="hidden" value={item.stockId} />
                 {/* Bell No */}
-                <div className="md:col-span-6 col-span-12">
-                  <select
+                <div className="md:col-span-6 col-span-12 relative">
+                  <input
+                    type="text"
+                    placeholder="Search Bale no. *"
                     value={item.bellNo}
-                    onChange={(e) => handleItemChange(index, "bellNo", e.target.value)}
+                    onChange={(e) => handleSearchChange(index, e.target.value)}
                     className="border-gray-300 rounded-md p-2 w-full"
-                  >
-                    <option value="">Select Bale no. *</option>
-                    {itemOptions ? itemOptions.map((option, i) => (
-                      <option key={i} value={option[3]}>
-                        {option[3]}
-                      </option>
-                    )) : ""}
-                  </select>
+                    onFocus={() => toggleDropdownOpen(index, true)}
+                    onBlur={() =>
+                      setTimeout(() => toggleDropdownOpen(index, false), 150) // Close dropdown with a delay to allow click
+                    }
+                  />
+                  {dropdownOpen[index] && (
+                    <div className="absolute top-full left-0 w-full border border-gray-300 bg-white rounded-md max-h-48 overflow-y-auto z-10">
+                      {filteredOptions[index]?.length ? (
+                        filteredOptions[index].map((option, i) => (
+                          <div
+                            key={i}
+                            onClick={() => handleSelectOption(index, option[3])}
+                            className="p-2 hover:bg-gray-100 cursor-pointer"
+                          >
+                            {option[3]}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-2 text-gray-500">No options found</div>
+                      )}
+                    </div>
+                  )}
                 </div>
+
 
 
                 {/* Item Name */}

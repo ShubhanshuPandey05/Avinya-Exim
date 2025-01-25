@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Searchable Select Option</title>
+  <style>
+    .searchable-select {
+      position: relative;
+      width: 300px;
+    }
+
+    .search-bar {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .options {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-top: none;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    .option {
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .option:hover {
+      background: #f0f0f0;
+    }
+
+    .options.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="searchable-select">
+    <input
+      type="text"
+      id="searchBar"
+      class="search-bar"
+      placeholder="Search options..."
+      oninput="filterOptions()"
+      onclick="toggleOptions()"
+    />
+    <div id="optionsContainer" class="options">
+      <div class="option" onclick="selectOption(this)">Apple</div>
+      <div class="option" onclick="selectOption(this)">Banana</div>
+      <div class="option" onclick="selectOption(this)">Cherry</div>
+      <div class="option" onclick="selectOption(this)">Date</div>
+      <div class="option" onclick="selectOption(this)">Grapes</div>
+      <div class="option" onclick="selectOption(this)">Mango</div>
+    </div>
+  </div>
+
+  <script>
+    const searchBar = document.getElementById("searchBar");
+    const optionsContainer = document.getElementById("optionsContainer");
+
+    // Function to toggle dropdown visibility
+    function toggleOptions() {
+      optionsContainer.classList.toggle("show");
+    }
+
+    // Function to filter options based on input
+    function filterOptions() {
+      const filter = searchBar.value.toLowerCase();
+      const options = optionsContainer.getElementsByClassName("option");
+
+      for (let option of options) {
+        const text = option.textContent || option.innerText;
+        option.style.display = text.toLowerCase().includes(filter) ? "block" : "none";
+      }
+    }
+
+    // Function to select an option
+    function selectOption(element) {
+      searchBar.value = element.textContent || element.innerText;
+      optionsContainer.classList.remove("show");
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".searchable-select")) {
+        optionsContainer.classList.remove("show");
+      }
+    });
+  </script>
+</body>
+</html>
