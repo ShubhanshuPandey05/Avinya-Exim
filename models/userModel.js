@@ -4,7 +4,6 @@ const userSchema = new mongoose.Schema({
     Companyname:{
         type:String,
         required:true,
-        unique:true
     },
     ContactPersonName:{
         type:String,
@@ -18,7 +17,8 @@ const userSchema = new mongoose.Schema({
     MobileNo:{
         type:String,
         required:true,
-        length:10
+        length:10,
+        unique:true
     },
     GST_No:{
         type:String,

@@ -144,7 +144,7 @@ const YourStocks = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 bg-gray-100 min-h-screen">
+    <div className="container py-6 bg-gray-100 min-h-screen w-[100vw]">
       <div className="rounded-xl bottom-24 left-2 fixed z-50 bg-white">
         <div className="flex items-center relative">
           <button

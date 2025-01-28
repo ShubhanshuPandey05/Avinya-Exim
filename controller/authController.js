@@ -8,10 +8,10 @@ export const signUp = async (req, res) => {
         const { Companyname, ContactPersonName, Password, MobileNo, GST_No, PAN_No, City } = req.body;
 
         // Check if the user already exists
-        let user = await User.findOne({ ContactPersonName });
+        let user = await User.findOne({ MobileNo });
         if (user) {
             console.log("User already exists");
-            return res.status(400).json({ message: "Username already exists." });
+            return res.status(400).json({ message: "User already exists." });
         }
 
         // Hash the password
@@ -37,23 +37,6 @@ export const signUp = async (req, res) => {
    ">
   Verify User
 </a>`
-//         const tempLink = `<a href="https://jsrprime-order-app.onrender.com/api/auth/user/userVerification/${tempToken}?MobileNo=${MobileNo}" 
-//    style="
-//      display: inline-block;
-//      background-color: #009900;
-//      color: white;
-//      padding: 12px 24px;
-//      text-decoration: none;
-//      border-radius: 8px;
-//      font-weight: bold;
-//      font-size: 16px;
-//      text-align: center;
-//      margin-top: 25px;
-//      margin-bottom: 25px;
-//      transition: background-color 0.3s ease;
-//    ">
-//   Verify User
-// </a>`
 
         // Create the new user instance
         let newUser = new User({
@@ -81,25 +64,27 @@ export const signUp = async (req, res) => {
 
         // Send an email notification
         try {
-            let response = await fetch(`https://forms-flow.onrender.com/api/sendmail/mail/custom/avinyaeximsurat@gmail.com`, {
-                method: "POST",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    heading: "A new registration for order application. Do you want to allow it?",
-                    formData,
-                    text: tempLink
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Email notification failed with status: ${response.status}`);
-            }
-
             // Save the new user to the database
             await newUser.save();
 
             // Retrieve the saved user for the response
-            user = await User.findOne({ ContactPersonName });
+            user = await User.findOne({ MobileNo });
+
+            if (user) {
+                let response = await fetch(`https://forms-flow.onrender.com/api/sendmail/mail/custom/avinyaeximsurat@gmail.com`, {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        heading: "A new registration for order application. Do you want to allow it?",
+                        formData,
+                        text: tempLink
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Email notification failed with status: ${response.status}`);
+                }
+            }
 
             res.status(200).json({
                 _id: user._id,
@@ -147,16 +132,18 @@ export const login = async (req, res) => {
             // console.log(user.Password)3
             if (isMatch) {
                 if (user.Authorized == true) {
-                    const token = generateAndSetCookies(user._id,res);
-                    res.status(200).json({userData:{
-                        _id: user._id,
-                        Companyname: user.Companyname,
-                        ContactPersonName: user.ContactPersonName,
-                        MobileNo: user.MobileNo,
-                        GSTIN: user.GST_No,
-                        city: user.City
-                    },jwt:token})
-                }else{
+                    const token = generateAndSetCookies(user._id, res);
+                    res.status(200).json({
+                        userData: {
+                            _id: user._id,
+                            Companyname: user.Companyname,
+                            ContactPersonName: user.ContactPersonName,
+                            MobileNo: user.MobileNo,
+                            GSTIN: user.GST_No,
+                            city: user.City
+                        }, jwt: token
+                    })
+                } else {
                     res.status(401).json("User Not Authorized")
                 }
             }
