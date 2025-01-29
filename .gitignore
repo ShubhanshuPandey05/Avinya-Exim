@@ -26,11 +26,6 @@ Thumbs.db
 .idea/
 *.swp
 
-# Build files
-dist/
-build/
-out/
-coverage/
 
 # Cache
 .cache/
