@@ -161,7 +161,7 @@ export const addStocks = async (req, res) => {
         item.quantity, // Quantity
         item.rate || "", // Rate (optional)
         item.amount || "", // Amount (optional)
-        "Kolkata",
+        "Surat",
         "",
         "",
         item.quantity,
@@ -251,7 +251,14 @@ export const getStocksByCity = async (req, res) => {
     let filteredRows;
 
     if (city == "Surat") {
-      filteredRows = rows.slice(1)
+      // Surat users (super admin) see all stocks from all cities
+      filteredRows = rows.slice(1).filter((row) => parseInt(row[balancedQtyIndex]) > 0);
+    } else if (city == "Kolkata") {
+      // Kolkata users see stocks that are in Kolkata (received from Surat)
+      filteredRows = rows.slice(1).filter((row) => row[cityIndex] === "Kolkata" && parseInt(row[balancedQtyIndex]) > 0);
+    } else if (city == "Bangladesh") {
+      // Bangladesh users see stocks that are in Bangladesh (received from Kolkata)
+      filteredRows = rows.slice(1).filter((row) => row[cityIndex] === "Bangladesh" && parseInt(row[balancedQtyIndex]) > 0);
     } else {
       filteredRows = rows.slice(1).filter((row) => row[cityIndex] === city && parseInt(row[balancedQtyIndex]) > 0);
     }
@@ -404,7 +411,222 @@ export const stockDispatched = async (req, res) => {
 
 
 
+// ..........Transfer-Stock-To-Kolkata...........................................................................................................................
 
+export const transferStockToKolkata = async (req, res) => {
+  try {
+    // Authenticate and create a Sheets API client
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: "v4", auth: client });
+
+    const { stockId } = req.body;
+
+    console.log("Stock ID for transfer:", stockId);
+
+    const options = {
+      timeZone: "Asia/Kolkata", // IST time zone
+      hour12: true, // Optional, for 12-hour format
+    };
+
+    // Fetch the data from the sheet to locate the row index
+    const getResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `Main Stock!A:O`, // Adjust the range as needed
+    });
+
+    const rows = getResponse.data.values;
+    if (!rows || rows.length === 0) {
+      console.log("No data found in the sheet.");
+      return res.status(404).json({ message: "No data found in the sheet." });
+    }
+
+    // Find the row to update
+    const targetColumnIndex = 0; // Assuming stockId is in column A
+    let rowIndex = -1;
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i][targetColumnIndex] === stockId) {
+        rowIndex = i + 1; // Add 1 to match Google Sheets' 1-based indexing
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      console.log("Stock not found.");
+      return res.status(404).json({ message: "Stock not found." });
+    }
+
+    // Update specific cells in the located row
+    const updatedValues = [
+      [
+        "Transport", // Column K (Transport)
+        new Date().toLocaleDateString("en-IN", options), // Column L (Dispatch Date)
+        null, // Column M (if you don't want to change it)
+        null, // Column N (if you don't want to change it)
+        null, // Column O (if you don't want to change it)
+        "in transit", // Column P (Status - in transit from Surat to Kolkata)
+      ],
+    ];
+
+    const updateResponse = await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `Main Stock!K${rowIndex}:P${rowIndex}`, // Specific row to update
+      valueInputOption: "RAW", // Use "USER_ENTERED" if you want Google Sheets to format the input
+      requestBody: {
+        values: updatedValues,
+      },
+    });
+
+    console.log("Transfer Response:", updateResponse);
+
+    res.status(200).json({
+      message: "Stock transferred to Kolkata successfully",
+      updateResponse,
+    });
+  } catch (error) {
+    console.error("Error transferring stock:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+
+
+
+
+
+// ..........Receive-Stock-From-Surat...........................................................................................................................
+
+export const receiveStockFromSurat = async (req, res) => {
+  try {
+    // Authenticate and create a Sheets API client
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: "v4", auth: client });
+
+    const { stockId } = req.body;
+
+    const options = {
+      timeZone: "Asia/Kolkata",
+      hour12: true,
+    };
+
+    // Fetch the sheet data
+    const getResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `Main Stock!A:O`, // Adjust range to include columns you want to modify
+    });
+
+    const rows = getResponse.data.values;
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ message: "No data found in the sheet." });
+    }
+
+    // Find the row index for the stockId
+    const targetColumnIndex = 0; // Assuming stockId is in column A
+    const rowIndex = rows.findIndex(row => row[targetColumnIndex] === stockId);
+
+    if (rowIndex === -1) {
+      return res.status(404).json({ message: "Stock not found." });
+    }
+
+    // Update relevant cells
+    rows[rowIndex][12] = new Date().toLocaleDateString("en-IN", options); // Update Date
+    rows[rowIndex][10] = "Kolkata"; // Update City
+    rows[rowIndex][15] = ""; // Clear Status field
+
+    // Update the spreadsheet
+    const updateRange = `Main Stock!A${rowIndex + 1}:P${rowIndex + 1}`; // Adjust range based on row
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: updateRange,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [rows[rowIndex]], // Send only the updated row
+      },
+    });
+
+    res.status(200).json(rows[rowIndex]);
+  } catch (error) {
+    console.error("Error updating spreadsheet:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ..........Transfer-Stock-To-Bangladesh...........................................................................................................................
+
+export const transferStockToBangladesh = async (req, res) => {
+  try {
+    // Authenticate and create a Sheets API client
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: "v4", auth: client });
+
+    const { stockId } = req.body;
+
+    console.log("Stock ID for transfer to Bangladesh:", stockId);
+
+    const options = {
+      timeZone: "Asia/Kolkata", // IST time zone
+      hour12: true, // Optional, for 12-hour format
+    };
+
+    // Fetch the data from the sheet to locate the row index
+    const getResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `Main Stock!A:O`, // Adjust the range as needed
+    });
+
+    const rows = getResponse.data.values;
+    if (!rows || rows.length === 0) {
+      console.log("No data found in the sheet.");
+      return res.status(404).json({ message: "No data found in the sheet." });
+    }
+
+    // Find the row to update
+    const targetColumnIndex = 0; // Assuming stockId is in column A
+    let rowIndex = -1;
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i][targetColumnIndex] === stockId) {
+        rowIndex = i + 1; // Add 1 to match Google Sheets' 1-based indexing
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      console.log("Stock not found.");
+      return res.status(404).json({ message: "Stock not found." });
+    }
+
+    // Update specific cells in the located row
+    const updatedValues = [
+      [
+        "Transport", // Column K (Transport)
+        new Date().toLocaleDateString("en-IN", options), // Column L (Dispatch Date)
+        null, // Column M (if you don't want to change it)
+        null, // Column N (if you don't want to change it)
+        null, // Column O (if you don't want to change it)
+        "dispatched", // Column P (Status - dispatched from Kolkata to Bangladesh)
+      ],
+    ];
+
+    const updateResponse = await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `Main Stock!K${rowIndex}:P${rowIndex}`, // Specific row to update
+      valueInputOption: "RAW", // Use "USER_ENTERED" if you want Google Sheets to format the input
+      requestBody: {
+        values: updatedValues,
+      },
+    });
+
+    console.log("Transfer to Bangladesh Response:", updateResponse);
+
+    res.status(200).json({
+      message: "Stock transferred to Bangladesh successfully",
+      updateResponse,
+    });
+  } catch (error) {
+    console.error("Error transferring stock to Bangladesh:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
 
 // ..........Stocks-Recieved-And-Update-Location.........................................................................................................
 
@@ -447,7 +669,7 @@ export const stockRecieved = async (req, res) => {
     // Update relevant cells
     rows[rowIndex][12] = new Date().toLocaleDateString("en-IN", options); // Update Date
     rows[rowIndex][10] = "Bangladesh"; // Update City
-    rows[rowIndex][15] = ""; // Clear Dispatched field
+    rows[rowIndex][15] = ""; // Clear status field (stock is now received in Bangladesh)
 
     // Update the spreadsheet
     const updateRange = `Main Stock!A${rowIndex + 1}:P${rowIndex + 1}`; // Adjust range based on row
@@ -480,12 +702,16 @@ export const stockRecieved = async (req, res) => {
 export const getStocksToBeRecieved = async (req, res) => {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: "v4", auth: client });
+  
+  // Get the user's city from the request (we'll need to pass this from the frontend)
+  const { city } = req.query;
+  console.log("Getting stocks to be received for city:", city);
+  
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: "Main Stock",
     });
-
 
     const rows = result.data.values;
 
@@ -494,19 +720,39 @@ export const getStocksToBeRecieved = async (req, res) => {
     }
 
     const headers = rows[0];
+    const statusIndex = headers.indexOf("Dispatched"); // This column now contains the status
+    console.log("Status column index:", statusIndex);
+    console.log("Headers:", headers);
 
-    const dispatchedIndex = headers.indexOf("Dispatched");
-
-    if (dispatchedIndex === -1) {
+    if (statusIndex === -1) {
       return res.status(500).json({ message: `No Stocks to be recieved` });
     }
 
-    const filteredRows = rows.slice(1).filter((row) => row[dispatchedIndex] === "yes");
+    let filteredRows;
+
+    if (city === "Kolkata") {
+      // Kolkata users see stocks that are "in transit" from Surat
+      filteredRows = rows.slice(1).filter((row) => row[statusIndex] === "in transit");
+      console.log("Kolkata - Found in transit stocks:", filteredRows.length);
+      // Debug: show all status values
+      const allStatuses = rows.slice(1).map(row => row[statusIndex]).filter(status => status);
+      console.log("All status values in data:", [...new Set(allStatuses)]);
+    } else if (city === "Bangladesh") {
+      // Bangladesh users see stocks that are "dispatched" from Kolkata
+      filteredRows = rows.slice(1).filter((row) => row[statusIndex] === "dispatched");
+      console.log("Bangladesh - Found dispatched stocks:", filteredRows.length);
+      // Debug: show all status values
+      const allStatuses = rows.slice(1).map(row => row[statusIndex]).filter(status => status);
+      console.log("All status values in data:", [...new Set(allStatuses)]);
+    } else {
+      // Default behavior for other cities
+      filteredRows = rows.slice(1).filter((row) => row[statusIndex] === "yes");
+      console.log("Other city - Found dispatched stocks:", filteredRows.length);
+    }
 
     if (filteredRows.length === 0) {
-      return res.status(204).json({ message: `No Stock to be recieved` });
+      return res.status(200).json({ data: [] });
     }
-    // console.log(filteredRows)
 
     res.json({ data: filteredRows });
   } catch (error) {

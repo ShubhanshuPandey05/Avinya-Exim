@@ -3,6 +3,7 @@ import { useLoading } from '../context/LoadingContext';
 import { Link } from 'react-router-dom';
 
 export default function MySales() {
+  const SERVER_URL = import.meta.env.VITE_SERVERURL;
   const authUser = JSON.parse(localStorage.getItem("authUser")) || {
     customerName: "",
     customerType: "",
@@ -26,7 +27,7 @@ export default function MySales() {
     const fetchOrders = async () => {
       showLoading();
       try {
-        const response = await fetch(`/api/get-sales/${city}`, {
+        const response = await fetch(`${SERVER_URL}/api/get-sales/${city}`, {
           // const response = await fetch(`http://localhost:8000/api/get-stock/${city}`, {
           method: "GET",
           headers: {

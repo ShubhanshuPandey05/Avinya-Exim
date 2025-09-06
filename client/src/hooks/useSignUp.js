@@ -10,13 +10,14 @@ const useSignUp = () => {
 
 
     const signUp = async (data) => {
+        const SERVER_URL = import.meta.env.VITE_SERVERURL;
 
         const success = handleErrorInputs(data.Companyname, data.ContactPersonName, data.Password, data.MobileNo, data.GST_No, data.PAN_No, data.City);
 
         if (!success) return;
         showLoading();
 
-        let response = await fetch("/api/auth/signUp/", {
+        let response = await fetch(`${SERVER_URL}/api/auth/signUp/`, {
         // let response = await fetch("http://localhost:8000/api/auth/signUp/", {
             method: "post",
             headers: {

@@ -10,6 +10,7 @@ const useLogin = () => {
     const { showLoading, hideLoading } = useLoading();
 
     const login = async (data) => {
+        const SERVER_URL = import.meta.env.VITE_SERVERURL;
 
         const success = handleErrorInputs(data.MobileNo, data.Password);
 
@@ -18,7 +19,7 @@ const useLogin = () => {
         showLoading();
 
         // let response = await fetch("http://localhost:8000/api/auth/login/",{
-        let response = await fetch("/api/auth/login/",{
+        let response = await fetch(`${SERVER_URL}/api/auth/login/`,{
             method: "post",
             headers: {
                 "Content-Type": "application/json",
