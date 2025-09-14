@@ -1,6 +1,6 @@
 import express from 'express';
 import protectRoute from '../middleware/protectRoute.js';
-import { addSales, addStocks, getSales, getStocksByCity, getStocksColors, getStocksItems, getStocksToBeRecieved, stockDispatched, stockRecieved, transferStockToKolkata, receiveStockFromSurat, transferStockToBangladesh } from '../controller/stocksController.js';
+import { addSales, addStocks, getSales, getStocksByCity, getStocksColors, getStocksItems, getStocksToBeRecieved, stockDispatched, stockRecieved, transferStockToKolkata, receiveStockFromSurat, transferStockToBangladesh, bulkTransferToKolkata, bulkReceiveFromSurat, bulkTransferToBangladesh, bulkReceiveFromKolkata, updatePaymentStatus } from '../controller/stocksController.js';
 const router = express.Router();
 router.get("/get-stock/:city",protectRoute, getStocksByCity);
 router.get("/get-sales/:city",protectRoute, getSales);
@@ -14,4 +14,9 @@ router.post("/stocks-recieving",protectRoute, stockRecieved);
 router.post("/transfer-to-kolkata",protectRoute, transferStockToKolkata);
 router.post("/receive-from-surat",protectRoute, receiveStockFromSurat);
 router.post("/transfer-to-bangladesh",protectRoute, transferStockToBangladesh);
+router.post("/bulk-transfer-to-kolkata",protectRoute, bulkTransferToKolkata);
+router.post("/bulk-receive-from-surat",protectRoute, bulkReceiveFromSurat);
+router.post("/bulk-transfer-to-bangladesh",protectRoute, bulkTransferToBangladesh);
+router.post("/bulk-receive-from-kolkata",protectRoute, bulkReceiveFromKolkata);
+router.post("/update-payment-status",protectRoute, updatePaymentStatus);
 export default router;

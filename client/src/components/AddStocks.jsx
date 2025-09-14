@@ -120,25 +120,25 @@ export default function AddStocks() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 sm:pb-20">
       {/* Header Section */}
       <div className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-3 rounded-xl">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex flex-row justify-between items-start sm:items-center py-4 space-y-4 sm:space-y-0">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-2 sm:p-3 rounded-xl">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Add New Stock</h1>
-                <p className="text-sm text-gray-600">Add inventory items to your stock</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Add New Stock</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Add inventory items to your stock</p>
               </div>
             </div>
-            <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-2 rounded-xl">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-3 sm:px-4 py-2 rounded-xl">
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">{items.length}</div>
+                <div className="text-lg sm:text-2xl font-bold text-white">{items.length}</div>
                 <div className="text-xs text-green-100">Items</div>
               </div>
             </div>
@@ -150,16 +150,16 @@ export default function AddStocks() {
         <form onSubmit={handleSubmit}>
           {/* Stock Items Section */}
           <div className="mb-8">
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 text-white mb-6">
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 sm:p-6 text-white mb-6">
               <div className="flex items-center space-x-3">
-                <div className="bg-white/20 p-3 rounded-xl">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-white/20 p-2 sm:p-3 rounded-xl">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">Stock Details</h2>
-                  <p className="text-blue-100">Enter your inventory items</p>
+                  <h2 className="text-lg sm:text-2xl font-bold">Stock Details</h2>
+                  <p className="text-blue-100 text-sm sm:text-base">Enter your inventory items</p>
                 </div>
               </div>
             </div>
@@ -168,11 +168,11 @@ export default function AddStocks() {
               {items.map((item, index) => (
                 <div
                   key={index}
-                  className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300"
+                  className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
-                      <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+                    <h3 className="text-sm sm:text-lg font-semibold text-gray-800 flex items-center space-x-2">
+                      <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold">
                         {index + 1}
                       </div>
                       <span>Item #{index + 1}</span>
@@ -181,19 +181,19 @@ export default function AddStocks() {
                       <button
                         type="button"
                         onClick={() => handleRemoveItem(index)}
-                        className="bg-red-100 hover:bg-red-200 text-red-600 p-2 rounded-lg transition-colors duration-200"
+                        className="bg-red-100 hover:bg-red-200 text-red-600 p-1.5 sm:p-2 rounded-lg transition-colors duration-200"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-1 14H6L5 7m5-3h4m-4 0a1 1 0 00-1 1v1h6V5a1 1 0 00-1-1h-4zm-2 4h8m-5 4h2m-2 4h2" />
                         </svg>
                       </button>
                     )}
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-12">
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-12">
                     {/* Bale No */}
-                    <div className="md:col-span-3 col-span-12">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Bale No. *</label>
+                    <div className="lg:col-span-3 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Bale No. *</label>
                       <input
                         type="text"
                         placeholder="Enter bale number"
@@ -205,8 +205,8 @@ export default function AddStocks() {
                     </div>
 
                     {/* Item Name */}
-                    <div className="md:col-span-6 col-span-12">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Item Name *</label>
+                    <div className="lg:col-span-6 sm:col-span-2 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Item Name *</label>
                       <select
                         value={item.itemName}
                         onChange={(e) => handleItemChange(index, "itemName", e.target.value)}
@@ -223,8 +223,8 @@ export default function AddStocks() {
                     </div>
 
                     {/* Color */}
-                    <div className="md:col-span-3 col-span-12">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                    <div className="lg:col-span-3 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Color</label>
                       <select
                         value={item.color}
                         onChange={(e) => handleItemChange(index, "color", e.target.value)}
@@ -240,8 +240,8 @@ export default function AddStocks() {
                     </div>
 
                     {/* Pcs */}
-                    <div className="md:col-span-2 col-span-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Pcs *</label>
+                    <div className="lg:col-span-2 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Pcs *</label>
                       <input
                         type="number"
                         placeholder="0"
@@ -253,8 +253,8 @@ export default function AddStocks() {
                     </div>
 
                     {/* Quantity */}
-                    <div className="md:col-span-2 col-span-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Quantity *</label>
+                    <div className="lg:col-span-2 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Quantity *</label>
                       <input
                         type="number"
                         placeholder="0"
@@ -266,8 +266,8 @@ export default function AddStocks() {
                     </div>
 
                     {/* Weight */}
-                    <div className="md:col-span-2 col-span-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Weight *</label>
+                    <div className="lg:col-span-2 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Weight *</label>
                       <input
                         type="number"
                         placeholder="0"
@@ -279,8 +279,8 @@ export default function AddStocks() {
                     </div>
 
                     {/* Rate */}
-                    <div className="md:col-span-3 col-span-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Rate</label>
+                    <div className="lg:col-span-3 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Rate</label>
                       <input
                         type="number"
                         placeholder="0.00"
@@ -291,8 +291,8 @@ export default function AddStocks() {
                     </div>
 
                     {/* Amount */}
-                    <div className="md:col-span-3 col-span-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                    <div className="lg:col-span-3 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Amount</label>
                       <input
                         type="text"
                         readOnly
@@ -311,10 +311,10 @@ export default function AddStocks() {
               <button
                 type="button"
                 onClick={handleAddItem}
-                className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium text-sm sm:text-base"
               >
                 <div className="flex items-center space-x-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                   <span>Add Another Item</span>
@@ -327,10 +327,10 @@ export default function AddStocks() {
           <div className="text-center">
             <button
               type="submit"
-              className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 font-bold text-lg"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 font-bold text-base sm:text-lg"
             >
               <div className="flex items-center space-x-2">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span>Add Stock</span>
@@ -343,7 +343,7 @@ export default function AddStocks() {
       {/* Confirmation Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all mx-4">
             <div className="p-6">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="bg-yellow-100 p-3 rounded-full">

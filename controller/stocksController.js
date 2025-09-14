@@ -8,8 +8,8 @@ dotenv.config();
 
 // Spreadsheet ID and range to update
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
-const RANGE = "Main Stock!A1:M";
-const RANGE2 = "Sales!A1:M";
+const RANGE = "Main Stock!A1:Q";
+const RANGE2 = "Sales!A1:S"; // Extended to include payment columns
 
 // Authenticate with the Google API using Service Account
 const serviceAccountCredentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
@@ -291,13 +291,13 @@ export const getSales = async (req, res) => {
   const sheets = google.sheets({ version: "v4", auth: client });
   const { city } = req.params;
 
-  if (city == 'Surat') {
+  // Allow both Surat and Bangladesh users to access sales data
+  if (city === 'Surat' || city === 'Bangladesh') {
     try {
       const result = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: "Sales",
       });
-
 
       const rows = result.data.values;
 
@@ -307,11 +307,10 @@ export const getSales = async (req, res) => {
 
       let filteredRows;
 
-      filteredRows = rows.slice(1).reverse()
-
+      filteredRows = rows.slice(1).reverse();
 
       if (filteredRows.length === 0) {
-        return res.status(404).json({ message: `No Stock in this ${city}` });
+        return res.status(404).json({ message: `No sales found for ${city}` });
       }
 
       res.json({ data: filteredRows });
@@ -319,6 +318,8 @@ export const getSales = async (req, res) => {
       console.error("Error reading Google Sheets:", error);
       res.status(500).json({ error: "Failed to read the Google Sheet." });
     }
+  } else {
+    res.status(403).json({ error: "Access denied. Only Surat and Bangladesh users can view sales data." });
   }
 };
 
@@ -702,11 +703,11 @@ export const stockRecieved = async (req, res) => {
 export const getStocksToBeRecieved = async (req, res) => {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: "v4", auth: client });
-  
+
   // Get the user's city from the request (we'll need to pass this from the frontend)
   const { city } = req.query;
   console.log("Getting stocks to be received for city:", city);
-  
+
   try {
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
@@ -777,7 +778,7 @@ export const addSales = async (req, res) => {
     const client = await auth.getClient();
     const sheets = google.sheets({ version: "v4", auth: client });
 
-    const { items, partyName, personName, contactNo } = req.body;
+    const { items, partyName, personName, contactNo, paymentStatus, amountReceived } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ error: "No items provided for sale." });
@@ -844,6 +845,13 @@ export const addSales = async (req, res) => {
 
       bellNo = rows[rowIndex - 1][3]; // Capture bell number
 
+      // Calculate payment details
+      const totalAmount = parseFloat(rows[rowIndex - 1][9]) || 0;
+      const receivedAmount = paymentStatus === 'received' ? totalAmount : (parseFloat(amountReceived) || 0);
+      const pendingAmount = totalAmount - receivedAmount;
+      const paymentDate = paymentStatus === 'received' || paymentStatus === 'partial' ? 
+        new Date().toLocaleDateString("en-IN", options) : '';
+
       // Create new sale record
       const newSale = [
         item.stockId, // Stock ID
@@ -852,13 +860,17 @@ export const addSales = async (req, res) => {
         partyName,
         personName,
         contactNo,
-        rows[rowIndex - 1][3], // Existing details
-        rows[rowIndex - 1][4],
-        rows[rowIndex - 1][5],
-        rows[rowIndex - 1][6],
-        item.quantity,
-        rows[rowIndex - 1][8],
-        rows[rowIndex - 1][9],
+        rows[rowIndex - 1][3], // Bale No
+        rows[rowIndex - 1][4], // Item Name
+        rows[rowIndex - 1][5], // Color
+        rows[rowIndex - 1][6], // Pcs
+        item.quantity, // Qty
+        rows[rowIndex - 1][8], // Rate
+        rows[rowIndex - 1][9], // Amount
+        paymentStatus || 'due', // Payment Status
+        receivedAmount, // Amount Received
+        pendingAmount, // Amount Pending
+        paymentDate, // Last Payment Date
       ];
 
       newSales.push(newSale);
@@ -892,6 +904,428 @@ export const addSales = async (req, res) => {
     }
   } catch (error) {
     console.error("Error updating spreadsheet:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Update payment status for a sale
+export const updatePaymentStatus = async (req, res) => {
+  try {
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: "v4", auth: client });
+
+    const { saleId, paymentStatus, amountReceived } = req.body;
+
+    if (!saleId || !paymentStatus) {
+      return res.status(400).json({ error: "Sale ID and payment status are required" });
+    }
+
+    // Get current sales data
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "Sales",
+    });
+
+    const rows = result.data.values;
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: "No sales data found" });
+    }
+
+    // Find the sale row
+    const saleRowIndex = rows.findIndex(row => row[0] === saleId.toString());
+    if (saleRowIndex === -1) {
+      return res.status(404).json({ error: "Sale not found" });
+    }
+
+    const saleRow = rows[saleRowIndex];
+    const totalAmount = parseFloat(saleRow[12]) || 0; // Amount is in column M (index 12)
+    
+    let receivedAmount, pendingAmount, paymentDate;
+    
+    if (paymentStatus === 'received') {
+      receivedAmount = totalAmount;
+      pendingAmount = 0;
+      paymentDate = new Date().toLocaleDateString("en-IN", { 
+        timeZone: "Asia/Kolkata",
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit' 
+      });
+    } else if (paymentStatus === 'partial') {
+      const currentReceived = parseFloat(saleRow[14]) || 0; // Get current received amount
+      const newPayment = parseFloat(amountReceived) || 0;
+      receivedAmount = currentReceived + newPayment; // Add to existing amount
+      pendingAmount = totalAmount - receivedAmount;
+      paymentDate = new Date().toLocaleDateString("en-IN", { 
+        timeZone: "Asia/Kolkata",
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit' 
+      });
+    } else {
+      receivedAmount = 0;
+      pendingAmount = totalAmount;
+      paymentDate = '';
+    }
+
+    // Update the row
+    rows[saleRowIndex][13] = paymentStatus; // Payment Status
+    rows[saleRowIndex][14] = receivedAmount; // Amount Received
+    rows[saleRowIndex][15] = pendingAmount; // Amount Pending
+    rows[saleRowIndex][16] = paymentDate; // Last Payment Date
+
+    // Update the sheet
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        data: [{
+          range: `Sales!N${saleRowIndex + 1}:Q${saleRowIndex + 1}`,
+          values: [[paymentStatus, receivedAmount, pendingAmount, paymentDate]]
+        }],
+        valueInputOption: "RAW",
+      },
+    });
+
+    res.status(200).json({
+      message: "Payment status updated successfully",
+      updatedSale: {
+        saleId,
+        paymentStatus,
+        receivedAmount,
+        pendingAmount,
+        paymentDate
+      }
+    });
+
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Bulk transfer stocks from Surat to Kolkata
+export const bulkTransferToKolkata = async (req, res) => {
+  try {
+    const { stockIds, transferDate } = req.body;
+
+    if (!stockIds || !Array.isArray(stockIds) || stockIds.length === 0) {
+      return res.status(400).json({ error: "Stock IDs are required" });
+    }
+
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: RANGE,
+    });
+
+    const rows = result.data.values;
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: "No data found in the sheet." });
+    }
+
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    const dispatchDate = transferDate || new Date().toLocaleDateString("en-IN", options);
+
+    const updatedRows = [];
+    const validStockIds = [];
+
+    for (const stockId of stockIds) {
+      const rowIndex = rows.findIndex(row => row[0] === stockId.toString());
+      if (rowIndex !== -1 && rows[rowIndex][10] === "Surat") { // Check if stock is in Surat
+        rows[rowIndex][10] = "Kolkata"; // Update city to Kolkata
+        rows[rowIndex][11] = "Transport"; // Update transport
+        rows[rowIndex][12] = dispatchDate; // Update dispatch date
+        rows[rowIndex][15] = "in transit"; // Update status
+        updatedRows.push(rowIndex + 1); // Convert to 1-based indexing
+        validStockIds.push(stockId);
+      }
+    }
+
+    if (updatedRows.length === 0) {
+      return res.status(400).json({ error: "No valid stocks found for transfer" });
+    }
+
+    // Batch update all rows - update city, transport, date, and status
+    const updateRequests = updatedRows.map(rowIndex => ({
+      range: `Main Stock!K${rowIndex}:P${rowIndex}`,
+      values: [[ // Column J (City)
+        "Transport", // Column K (Transport)
+        dispatchDate, // Column L (Dispatch Date)
+        null, // Column M
+        null, // Column N
+        null, // Column O
+        "in transit" // Column P (Status)
+      ]]
+    }));
+
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        data: updateRequests,
+        valueInputOption: "RAW",
+      },
+    });
+
+    res.status(200).json({
+      message: `Successfully transferred ${validStockIds.length} stocks to Kolkata`,
+      transferredStocks: validStockIds
+    });
+
+  } catch (error) {
+    console.error("Error in bulk transfer to Kolkata:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Bulk receive stocks from Surat in Kolkata
+export const bulkReceiveFromSurat = async (req, res) => {
+  try {
+    console.log('bulkReceiveFromSurat called with:', req.body);
+    const { stockIds, receiveDate } = req.body;
+
+    if (!stockIds || !Array.isArray(stockIds) || stockIds.length === 0) {
+      console.log('No stock IDs provided');
+      return res.status(400).json({ error: "Stock IDs are required" });
+    }
+
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: RANGE,
+    });
+
+    const rows = result.data.values;
+    if (!rows || rows.length === 0) {
+      console.log('No data found in sheet');
+      return res.status(404).json({ error: "No data found in the sheet." });
+    }
+
+    console.log('Total rows in sheet:', rows.length);
+    console.log('Looking for stock IDs:', stockIds);
+
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    const receivedDate = receiveDate || new Date().toLocaleDateString("en-IN", options);
+
+    const updatedRows = [];
+    const validStockIds = [];
+
+    for (const stockId of stockIds) {
+      const rowIndex = rows.findIndex(row => row[0] === stockId.toString());
+      console.log(`Looking for stock ID ${stockId}, found at row ${rowIndex}`);
+
+      if (rowIndex !== -1) {
+        const rowData = rows[rowIndex];
+        console.log(`Row ${rowIndex} data:`, rowData);
+        console.log(`Row length:`, rowData.length);
+        console.log(`City at column 10:`, rowData[10]);
+        console.log(`Status at column 15:`, rowData[15]);
+
+        // Check if this stock is ready to be received (has "Transport" in godown column)
+        if (rowData[10] === "Transport") {
+          console.log(`Stock ${stockId} is ready to be received, processing...`);
+
+          // Extend the row to have all necessary columns if needed
+          while (rowData.length < 17) {
+            rowData.push("");
+          }
+
+          // Update the row data
+          rows[rowIndex][10] = "Kolkata"; // Update city to Kolkata
+          rows[rowIndex][12] = receivedDate; // Update received date
+          rows[rowIndex][15] = ""; // Clear status
+
+          updatedRows.push(rowIndex + 1); // Convert to 1-based indexing
+          validStockIds.push(stockId);
+        } else {
+          console.log(`Stock ${stockId} is not ready to be received. Godown: ${rowData[10]}`);
+        }
+      } else {
+        console.log(`Stock ID ${stockId} not found in sheet`);
+      }
+    }
+
+    if (updatedRows.length === 0) {
+      return res.status(400).json({ error: "No valid stocks found for receiving" });
+    }
+
+    // Batch update all rows - update city, received date, and clear status
+    const updateRequests = updatedRows.map(rowIndex => {
+      const rowData = rows[rowIndex - 1]; // Convert back to 0-based indexing
+      console.log(`Updating row ${rowIndex} with data:`, rowData);
+
+      return {
+        range: `Main Stock!K${rowIndex}:P${rowIndex}`, // Update entire row
+        values: [[ // Column J (City)
+          "Kolkata", // Column K (Transport)
+          null, // Column L
+          receivedDate, // Column M (Dispatch Date)
+          null, // Column N
+          null, // Column O
+          "" // Column P (Status)
+        ]]
+      };
+    });
+
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        data: updateRequests,
+        valueInputOption: "RAW",
+      },
+    });
+
+    res.status(200).json({
+      message: `Successfully received ${validStockIds.length} stocks from Surat`,
+      receivedStocks: validStockIds
+    });
+
+  } catch (error) {
+    console.error("Error in bulk receive from Surat:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Bulk transfer stocks from Kolkata to Bangladesh
+export const bulkTransferToBangladesh = async (req, res) => {
+  try {
+    const { stockIds, transferDate } = req.body;
+
+    if (!stockIds || !Array.isArray(stockIds) || stockIds.length === 0) {
+      return res.status(400).json({ error: "Stock IDs are required" });
+    }
+
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: RANGE,
+    });
+
+    const rows = result.data.values;
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: "No data found in the sheet." });
+    }
+
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    const dispatchDate = transferDate || new Date().toLocaleDateString("en-IN", options);
+
+    const updatedRows = [];
+    const validStockIds = [];
+
+    for (const stockId of stockIds) {
+      const rowIndex = rows.findIndex(row => row[0] === stockId.toString());
+      if (rowIndex !== -1 && rows[rowIndex][10] === "Kolkata") { // Check if stock is in Kolkata // Update city to Bangladesh
+        rows[rowIndex][10] = "Bangladesh"; // Update transport
+        rows[rowIndex][11] = dispatchDate; // Update dispatch date
+        rows[rowIndex][15] = "dispatched"; // Update status
+        updatedRows.push(rowIndex + 1); // Convert to 1-based indexing
+        validStockIds.push(stockId);
+      }
+    }
+
+    if (updatedRows.length === 0) {
+      return res.status(400).json({ error: "No valid stocks found for transfer" });
+    }
+
+    // Batch update all rows - update city, transport, date, and status
+    const updateRequests = updatedRows.map(rowIndex => ({
+      range: `Main Stock!K${rowIndex}:P${rowIndex}`,
+      values: [[
+        "Transport", // Column K (Transport)
+        dispatchDate, // Column L (Dispatch Date)
+        null, // Column M
+        null, // Column N
+        null, // Column O
+        "dispatched" // Column P (Status)
+      ]]
+    }));
+
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        data: updateRequests,
+        valueInputOption: "RAW",
+      },
+    });
+
+    res.status(200).json({
+      message: `Successfully transferred ${validStockIds.length} stocks to Bangladesh`,
+      transferredStocks: validStockIds
+    });
+
+  } catch (error) {
+    console.error("Error in bulk transfer to Bangladesh:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Bulk receive stocks from Kolkata in Bangladesh
+export const bulkReceiveFromKolkata = async (req, res) => {
+  try {
+    const { stockIds, receiveDate } = req.body;
+
+    if (!stockIds || !Array.isArray(stockIds) || stockIds.length === 0) {
+      return res.status(400).json({ error: "Stock IDs are required" });
+    }
+
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: RANGE,
+    });
+
+    const rows = result.data.values;
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ error: "No data found in the sheet." });
+    }
+
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    const receivedDate = receiveDate || new Date().toLocaleDateString("en-IN", options);
+
+    const updatedRows = [];
+    const validStockIds = [];
+
+    for (const stockId of stockIds) {
+      const rowIndex = rows.findIndex(row => row[0] === stockId.toString());
+      // console.log(rowIndex);
+      // console.log(rows[rowIndex]);
+      if (rowIndex !== -1 && rows[rowIndex][15] == "dispatched") { // Check if stock is dispatched
+        rows[rowIndex][10] = "Bangladesh"; // Update city to Bangladesh
+        rows[rowIndex][12] = receivedDate; // Update received date
+        rows[rowIndex][15] = ""; // Clear status
+        updatedRows.push(rowIndex + 1); // Convert to 1-based indexing
+        validStockIds.push(stockId);
+      }
+    }
+
+    if (updatedRows.length === 0) {
+      // console.log(updatedRows);
+      return res.status(400).json({ error: "No valid stocks found for receiving" });
+    }
+
+    // Batch update all rows - update city, received date, and clear status
+    const updateRequests = updatedRows.map(rowIndex => ({
+      range: `Main Stock!K${rowIndex}:P${rowIndex}`,
+      values: [[ // Column J (City)
+        "Bangladesh", // Column K (Transport)
+        null, // Column M
+        receivedDate, // Column L (Received Date)
+        null, // Column N
+        null, // Column O
+        "" // Column P (Clear Status)
+      ]]
+    }));
+
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        data: updateRequests,
+        valueInputOption: "RAW",
+      },
+    });
+
+    res.status(200).json({
+      message: `Successfully received ${validStockIds.length} stocks from Kolkata`,
+      receivedStocks: validStockIds
+    });
+
+  } catch (error) {
+    console.error("Error in bulk receive from Kolkata:", error);
     res.status(500).json({ error: error.message });
   }
 };

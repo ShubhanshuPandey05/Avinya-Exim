@@ -15,6 +15,8 @@ export default function AddSale() {
   const [personName, setPersonName] = useState("");
   const [partyName, setPartyName] = useState("");
   const [contactNo, setContactNo] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("due");
+  const [amountReceived, setAmountReceived] = useState("");
   const [items, setItems] = useState([
     { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", stockId: "", availablePcs: "", availableQty: "" },
   ]);
@@ -138,7 +140,14 @@ export default function AddSale() {
       const response = await fetch(`${SERVER_URL}/api/add-sales`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ partyName, personName, contactNo, items }),
+        body: JSON.stringify({ 
+          partyName, 
+          personName, 
+          contactNo, 
+          items, 
+          paymentStatus, 
+          amountReceived: paymentStatus === 'partial' ? amountReceived : null 
+        }),
         credentials: 'include',
       });
 
@@ -147,6 +156,8 @@ export default function AddSale() {
         setPersonName("")
         setPartyName("")
         setContactNo("")
+        setPaymentStatus("due")
+        setAmountReceived("")
         setShowSuccessModal(true);
       } else {
         const jwt = getCookie('jwt');
@@ -166,25 +177,25 @@ export default function AddSale() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 sm:pb-20">
       {/* Header Section */}
       <div className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-orange-600 to-red-600 p-3 rounded-xl">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex flex-row justify-between items-start sm:items-center py-4 space-y-4 sm:space-y-0">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="bg-gradient-to-r from-orange-600 to-red-600 p-2 sm:p-3 rounded-xl">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Sales Voucher</h1>
-                <p className="text-sm text-gray-600">Create new sales transaction</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Sales Voucher</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Create new sales transaction</p>
               </div>
             </div>
-            <div className="bg-gradient-to-r from-orange-500 to-red-500 px-4 py-2 rounded-xl">
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 px-3 sm:px-4 py-2 rounded-xl">
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">{items.length}</div>
+                <div className="text-lg sm:text-2xl font-bold text-white">{items.length}</div>
                 <div className="text-xs text-orange-100">Items</div>
               </div>
             </div>
@@ -196,24 +207,24 @@ export default function AddSale() {
         <form onSubmit={handleSubmit}>
           {/* Customer Information Section */}
           <div className="mb-8">
-            <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-6 text-white mb-6">
+            <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-4 sm:p-6 text-white mb-6">
               <div className="flex items-center space-x-3">
-                <div className="bg-white/20 p-3 rounded-xl">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-white/20 p-2 sm:p-3 rounded-xl">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">Customer Information</h2>
-                  <p className="text-purple-100">Enter customer details</p>
+                  <h2 className="text-lg sm:text-2xl font-bold">Customer Information</h2>
+                  <p className="text-purple-100 text-sm sm:text-base">Enter customer details</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-xl p-6">
-              <div className="grid gap-6 md:grid-cols-3">
+            <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6">
+              <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Party Name *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Party Name *</label>
                   <input
                     type="text"
                     name="partyName"
@@ -226,7 +237,7 @@ export default function AddSale() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Person Name *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Person Name *</label>
                   <input
                     type="text"
                     name="personName"
@@ -239,7 +250,7 @@ export default function AddSale() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact No. *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Contact No. *</label>
                   <input
                     type="text"
                     name="ContactNo"
@@ -255,18 +266,66 @@ export default function AddSale() {
             </div>
           </div>
 
+          {/* Payment Information Section */}
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-green-500 to-teal-600 rounded-2xl p-4 sm:p-6 text-white mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="bg-white/20 p-2 sm:p-3 rounded-xl">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-2xl font-bold">Payment Information</h2>
+                  <p className="text-green-100 text-sm sm:text-base">Select payment status</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 border border-gray-100">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Payment Status *</label>
+                  <select
+                    value={paymentStatus}
+                    onChange={(e) => setPaymentStatus(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    required
+                  >
+                    <option value="due">Due</option>
+                    <option value="received">Received</option>
+                    <option value="partial">Partial</option>
+                  </select>
+                </div>
+                {paymentStatus === 'partial' && (
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Amount Received *</label>
+                    <input
+                      type="number"
+                      value={amountReceived}
+                      onChange={(e) => setAmountReceived(e.target.value)}
+                      placeholder="Enter amount received"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Sales Items Section */}
           <div className="mb-8">
-            <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-6 text-white mb-6">
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-4 sm:p-6 text-white mb-6">
               <div className="flex items-center space-x-3">
-                <div className="bg-white/20 p-3 rounded-xl">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-white/20 p-2 sm:p-3 rounded-xl">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">Item Details</h2>
-                  <p className="text-orange-100">Select items for sale</p>
+                  <h2 className="text-lg sm:text-2xl font-bold">Item Details</h2>
+                  <p className="text-orange-100 text-sm sm:text-base">Select items for sale</p>
                 </div>
               </div>
             </div>
@@ -275,11 +334,11 @@ export default function AddSale() {
               {items.map((item, index) => (
                 <div
                   key={index}
-                  className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300"
+                  className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
-                      <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+                    <h3 className="text-sm sm:text-lg font-semibold text-gray-800 flex items-center space-x-2">
+                      <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold">
                         {index + 1}
                       </div>
                       <span>Item #{index + 1}</span>
@@ -288,21 +347,21 @@ export default function AddSale() {
                       <button
                         type="button"
                         onClick={() => handleRemoveItem(index)}
-                        className="bg-red-100 hover:bg-red-200 text-red-600 p-2 rounded-lg transition-colors duration-200"
+                        className="bg-red-100 hover:bg-red-200 text-red-600 p-1.5 sm:p-2 rounded-lg transition-colors duration-200"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-1 14H6L5 7m5-3h4m-4 0a1 1 0 00-1 1v1h6V5a1 1 0 00-1-1h-4zm-2 4h8m-5 4h2m-2 4h2" />
                         </svg>
                       </button>
                     )}
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-12">
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-12">
                     <input type="hidden" value={item.stockId} />
                     
                     {/* Bale No Search */}
-                    <div className="md:col-span-6 col-span-12 relative">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Search Bale No. *</label>
+                    <div className="lg:col-span-6 sm:col-span-2 col-span-1 relative">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Search Bale No. *</label>
                       <input
                         type="text"
                         placeholder="Search by bale number"
@@ -336,8 +395,8 @@ export default function AddSale() {
                     </div>
 
                     {/* Item Name */}
-                    <div className="md:col-span-3 col-span-12">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
+                    <div className="lg:col-span-3 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Item Name</label>
                       <input
                         type="text"
                         placeholder="Item name"
@@ -349,8 +408,8 @@ export default function AddSale() {
                     </div>
 
                     {/* Color */}
-                    <div className="md:col-span-3 col-span-12">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                    <div className="lg:col-span-3 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Color</label>
                       <input
                         type="text"
                         value={item.color}
@@ -362,8 +421,8 @@ export default function AddSale() {
                     </div>
 
                     {/* Pcs */}
-                    <div className="md:col-span-2 col-span-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Pcs *</label>
+                    <div className="lg:col-span-2 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Pcs *</label>
                       <input
                         type="number"
                         placeholder="0"
@@ -377,8 +436,8 @@ export default function AddSale() {
                     </div>
 
                     {/* Quantity */}
-                    <div className="md:col-span-2 col-span-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Quantity *</label>
+                    <div className="lg:col-span-2 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Quantity *</label>
                       <input
                         type="number"
                         placeholder="0"
@@ -392,8 +451,8 @@ export default function AddSale() {
                     </div>
 
                     {/* Rate */}
-                    <div className="md:col-span-3 col-span-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Rate</label>
+                    <div className="lg:col-span-3 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Rate</label>
                       <input
                         type="number"
                         placeholder="0.00"
@@ -404,8 +463,8 @@ export default function AddSale() {
                     </div>
 
                     {/* Amount */}
-                    <div className="md:col-span-3 col-span-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                    <div className="lg:col-span-3 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Amount</label>
                       <input
                         type="text"
                         readOnly
@@ -424,10 +483,10 @@ export default function AddSale() {
               <button
                 type="button"
                 onClick={handleAddItem}
-                className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-6 py-3 rounded-xl hover:from-orange-600 hover:to-red-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
+                className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:from-orange-600 hover:to-red-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium text-sm sm:text-base"
               >
                 <div className="flex items-center space-x-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                   <span>Add Another Item</span>
@@ -440,10 +499,10 @@ export default function AddSale() {
           <div className="text-center">
             <button
               type="submit"
-              className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-8 py-4 rounded-xl hover:from-orange-600 hover:to-red-700 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 font-bold text-lg"
+              className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-orange-600 hover:to-red-700 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 font-bold text-base sm:text-lg"
             >
               <div className="flex items-center space-x-2">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span>Submit Sale</span>
@@ -456,7 +515,7 @@ export default function AddSale() {
       {/* Confirmation Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all mx-4">
             <div className="p-6">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="bg-yellow-100 p-3 rounded-full">
