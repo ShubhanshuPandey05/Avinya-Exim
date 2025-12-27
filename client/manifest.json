@@ -1,6 +1,6 @@
 {
-  "name": "Stock Management Avinaya Exim",
-  "short_name": "StockXo",
+  "name": "Avinya Exim Stock Management",
+  "short_name": "Avinya Exim",
   "description": "A PWA for managing stock flow from Surat to Bangladesh via Kolkata.",
   "start_url": "/",
   "scope": "/",
