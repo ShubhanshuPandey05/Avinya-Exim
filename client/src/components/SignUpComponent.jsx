@@ -278,7 +278,7 @@ export default function SignUpComponent() {
                 {/* Footer */}
                 <div className="text-center mt-8">
                     <p className="text-sm text-gray-500">
-                        © 2024 Avinaya Exim. All rights reserved.
+                        © 2024 Avinya Exim. All rights reserved.
                     </p>
                 </div>
             </div>
