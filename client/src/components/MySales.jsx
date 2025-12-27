@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useLoading } from '../context/LoadingContext';
+import { useData } from '../context/DataContext';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 export default function MySales() {
   const SERVER_URL = import.meta.env.VITE_SERVERURL;
@@ -10,7 +12,6 @@ export default function MySales() {
     city: ""
   };
   const [city] = useState(authUser.city || "");
-  const [orders, setOrders] = useState([]);
   const [totalAmount, setTotalAmount] = useState();
   const [totalPcs, setTotalPcs] = useState("");
   const [totalQty, setTotalQty] = useState("");
@@ -22,6 +23,16 @@ export default function MySales() {
   const [selectedSale, setSelectedSale] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState("");
 
+  // Get data from context
+  const {
+    salesData,
+    refreshSales,
+    updateSalesData,
+  } = useData();
+
+  // Use context data or empty array as fallback
+  const orders = salesData || [];
+
   const toggleView = () => {
     setIsTableView(!isTableView);
   };
@@ -29,9 +40,9 @@ export default function MySales() {
   const handlePaymentUpdate = (saleId, status) => {
     if (status === 'partial') {
       const sale = orders.find(order => order[0] === saleId);
-      setSelectedSale({ 
-        id: saleId, 
-        status, 
+      setSelectedSale({
+        id: saleId,
+        status,
         currentReceived: sale[14] || 0,
         totalAmount: sale[12] || 0
       });
@@ -42,35 +53,29 @@ export default function MySales() {
   };
 
   const updatePaymentStatus = async (saleId, status, amount = null) => {
-    showLoading();
     try {
       const response = await fetch(`${SERVER_URL}/api/update-payment-status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          saleId, 
-          paymentStatus: status, 
-          amountReceived: amount 
+        body: JSON.stringify({
+          saleId,
+          paymentStatus: status,
+          amountReceived: amount
         }),
         credentials: 'include',
       });
 
       if (response.ok) {
-        // Refresh the orders list
-        const fetchResponse = await fetch(`${SERVER_URL}/api/get-sales/${city}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
-        const data = await fetchResponse.json();
-        setOrders(data.data || []);
+        // Refresh the sales data from context
+        await refreshSales();
         setShowPaymentModal(false);
         setPaymentAmount("");
+        toast.success("Payment status updated successfully!");
       }
     } catch (error) {
       console.error("Error updating payment status:", error);
+      toast.error("Failed to update payment status");
     }
-    hideLoading();
   };
 
   const handlePartialPayment = () => {
@@ -79,32 +84,7 @@ export default function MySales() {
     }
   };
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      showLoading();
-      try {
-        const response = await fetch(`${SERVER_URL}/api/get-sales/${city}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          new Error(`No Orders`);
-        }
-
-        const data = await response.json();
-        setOrders(data.data || []);
-      } catch (err) {
-        setError(err.message || "Failed to fetch Sales.");
-      } finally {
-        hideLoading();
-      }
-    };
-    fetchOrders();
-  }, []);
+  // Data is now loaded from context, no need to fetch here
 
   useEffect(() => {
     const calculateTotals = () => {
@@ -113,7 +93,7 @@ export default function MySales() {
         const totalReceived = orders.reduce((sum, order) => sum + parseFloat(order[14] || 0), 0);
         const totalPending = orders.reduce((sum, order) => sum + parseFloat(order[15] || 0), 0);
         const averageRate = orders.reduce((sum, order) => sum + parseFloat(order[11] || 0), 0) / orders.length;
-        
+
         setTotalAmount(parseFloat(totalAmount));
         setTotalPcs(totalReceived); // Using totalPcs state for total received
         setTotalQty(totalPending); // Using totalQty state for total pending
@@ -141,15 +121,14 @@ export default function MySales() {
                 <p className="text-xs sm:text-sm text-gray-600 capitalize">{city} Location</p>
               </div>
             </div>
-            
+
             {/* View Toggle */}
             <div className="bg-gray-100 rounded-xl p-1 flex">
               <button
-                className={`relative px-2 sm:px-4 py-2 rounded-lg transition-all duration-200 ${
-                  isTableView 
-                    ? 'bg-white shadow-md text-orange-600' 
+                className={`relative px-2 sm:px-4 py-2 rounded-lg transition-all duration-200 ${isTableView
+                    ? 'bg-white shadow-md text-orange-600'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
                 onClick={toggleView}
               >
                 <div className="flex items-center space-x-1 sm:space-x-2">
@@ -160,11 +139,10 @@ export default function MySales() {
                 </div>
               </button>
               <button
-                className={`relative px-2 sm:px-4 py-2 rounded-lg transition-all duration-200 ${
-                  !isTableView 
-                    ? 'bg-white shadow-md text-orange-600' 
+                className={`relative px-2 sm:px-4 py-2 rounded-lg transition-all duration-200 ${!isTableView
+                    ? 'bg-white shadow-md text-orange-600'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
                 onClick={toggleView}
               >
                 <div className="flex items-center space-x-1 sm:space-x-2">
@@ -213,9 +191,20 @@ export default function MySales() {
                   <p className="text-lg sm:text-2xl font-bold text-green-600 truncate">₹{totalAmount ? totalAmount.toFixed(2) : '0.00'}</p>
                 </div>
                 <div className="bg-green-100 p-2 sm:p-3 rounded-xl flex-shrink-0 ml-2">
-                  <svg className="w-4 h-4 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  <svg
+                    className="w-4 h-4 sm:w-6 sm:h-6 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 6h12M6 10h12M9 6c3 0 6 2 6 5s-3 5-6 5h-3l7 6"
+                    />
                   </svg>
+
                 </div>
               </div>
             </div>
@@ -321,11 +310,10 @@ export default function MySales() {
                       {orders.map((order, index) => (
                         <tr
                           key={index}
-                          className={`hover:bg-gray-50 transition-colors duration-200 ${
-                            order[13] === 'due' ? "bg-red-50 border-l-4 border-red-400" : 
-                            order[13] === 'partial' ? "bg-yellow-50 border-l-4 border-yellow-400" : 
-                            "bg-green-50 border-l-4 border-green-400"
-                          }`}
+                          className={`hover:bg-gray-50 transition-colors duration-200 ${order[13] === 'due' ? "bg-red-50 border-l-4 border-red-400" :
+                              order[13] === 'partial' ? "bg-yellow-50 border-l-4 border-yellow-400" :
+                                "bg-green-50 border-l-4 border-green-400"
+                            }`}
                         >
                           <td className="px-2 sm:px-3 py-3 sm:py-4 whitespace-nowrap">
                             <div className="text-xs sm:text-sm font-medium text-gray-900">#{order[0]}</div>
@@ -348,11 +336,10 @@ export default function MySales() {
                           <td className="px-2 sm:px-3 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 text-right">₹{order[11]}</td>
                           <td className="px-2 sm:px-3 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-semibold text-gray-900 text-right">₹{order[12]}</td>
                           <td className="px-2 sm:px-3 py-3 sm:py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              order[13] === 'received' ? 'bg-green-100 text-green-800' :
-                              order[13] === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order[13] === 'received' ? 'bg-green-100 text-green-800' :
+                                order[13] === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                              }`}>
                               {order[13] || 'due'}
                             </span>
                           </td>
@@ -379,9 +366,9 @@ export default function MySales() {
                               )
                             ) : (
                               <div className="text-xs text-gray-500">
-                                {order[13] === 'received' ? '✅ Fully Paid' : 
-                                 order[13] === 'partial' ? '⚠️ Partial Payment' : 
-                                 '❌ Payment Due'}
+                                {order[13] === 'received' ? '✅ Fully Paid' :
+                                  order[13] === 'partial' ? '⚠️ Partial Payment' :
+                                    '❌ Payment Due'}
                               </div>
                             )}
                           </td>
@@ -442,51 +429,50 @@ export default function MySales() {
                         <span className="text-xs sm:text-sm font-medium text-gray-600">Bale No.</span>
                         <span className="text-xs sm:text-sm text-gray-900 font-semibold truncate max-w-[100px]">{order[6]}</span>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <span className="text-xs sm:text-sm font-medium text-gray-600">Party</span>
                         <span className="text-xs sm:text-sm text-gray-900 truncate max-w-[120px]">{order[3]}</span>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <span className="text-xs sm:text-sm font-medium text-gray-600">Contact</span>
                         <span className="text-xs sm:text-sm text-gray-900 truncate max-w-[100px]">{order[5]}</span>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <span className="text-xs sm:text-sm font-medium text-gray-600">Item</span>
                         <span className="text-xs sm:text-sm text-gray-900 font-medium truncate max-w-[100px]">{order[7]}</span>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <span className="text-xs sm:text-sm font-medium text-gray-600">Color</span>
                         <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {order[8]}
                         </span>
                       </div>
-                      
+
                       <div className="space-y-2 sm:space-y-3 pt-2 sm:pt-3 border-t border-gray-100">
                         <div className="flex items-center justify-between">
                           <span className="text-xs sm:text-sm font-medium text-gray-600">Payment Status</span>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            order[13] === 'received' ? 'bg-green-100 text-green-800' :
-                            order[13] === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order[13] === 'received' ? 'bg-green-100 text-green-800' :
+                              order[13] === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                            }`}>
                             {order[13] || 'due'}
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center justify-between">
                           <span className="text-xs sm:text-sm font-medium text-gray-600">Amount Received</span>
                           <span className="text-xs sm:text-sm text-green-600 font-semibold">₹{order[14] || '0.00'}</span>
                         </div>
-                        
+
                         <div className="flex items-center justify-between">
                           <span className="text-xs sm:text-sm font-medium text-gray-600">Amount Pending</span>
                           <span className="text-xs sm:text-sm text-red-600 font-semibold">₹{order[15] || '0.00'}</span>
                         </div>
-                        
+
                         {city === 'Bangladesh' ? (
                           (order[13] === 'due' || order[13] === 'partial') && (
                             <div className="flex space-x-2 pt-2">
@@ -506,14 +492,13 @@ export default function MySales() {
                           )
                         ) : (
                           <div className="pt-2 text-center">
-                            <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                              order[13] === 'received' ? 'bg-green-100 text-green-800' :
-                              order[13] === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {order[13] === 'received' ? '✅ Fully Paid' : 
-                               order[13] === 'partial' ? '⚠️ Partial Payment' : 
-                               '❌ Payment Due'}
+                            <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${order[13] === 'received' ? 'bg-green-100 text-green-800' :
+                                order[13] === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                              }`}>
+                              {order[13] === 'received' ? '✅ Fully Paid' :
+                                order[13] === 'partial' ? '⚠️ Partial Payment' :
+                                  '❌ Payment Due'}
                             </div>
                           </div>
                         )}
@@ -562,7 +547,7 @@ export default function MySales() {
                     </div>
                   </div>
                 )}
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Additional Amount Received

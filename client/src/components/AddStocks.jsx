@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useLoading } from "../context/LoadingContext";
+import { useData } from "../context/DataContext";
 
 export default function AddStocks() {
   const SERVER_URL = import.meta.env.VITE_SERVERURL;
@@ -19,6 +20,7 @@ export default function AddStocks() {
   const [itemOptions, setItemOptions] = useState([]);
   const [units, setUnits] = useState([]);
   const { showLoading, hideLoading } = useLoading();
+  const { refreshStocks } = useData();
 
   useEffect(() => {
     async function fetchItems() {
@@ -102,6 +104,18 @@ export default function AddStocks() {
       if (response.ok) {
         setItems([{ itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", weight: "" }]);
         setShowSuccessModal(true);
+        toast.success("Stocks added successfully!");
+        
+        // Add a small delay to ensure server has processed the request, then refresh
+        setTimeout(async () => {
+          try {
+            await refreshStocks();
+            console.log("Stocks data refreshed successfully");
+          } catch (error) {
+            console.error("Error refreshing stocks:", error);
+            toast.error("Failed to refresh stock data. Please refresh the page manually.");
+          }
+        }, 1000); // 1 second delay to ensure server processing
       } else {
         const jwt = getCookie('jwt');
         if (!jwt) {

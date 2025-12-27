@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLoading } from "../context/LoadingContext";
+import { useData } from "../context/DataContext";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -11,20 +12,32 @@ const YourStocks = () => {
     city: ""
   };
 
-  const [recievingStocks, setRecievingStocks] = useState([]);
   const [city] = useState(authUser.city || "");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [selectedStockId, setSelectedStockId] = useState(null);
-  const [orders, setOrders] = useState([]);
   const [error, setError] = useState(null);
   const { showLoading, hideLoading } = useLoading();
   const [isTableView, setIsTableView] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Get data from context
+  const {
+    stocksData,
+    receivingStocksData,
+    isDataLoaded,
+    refreshStocks,
+    refreshReceivingStocks,
+    updateStocksData,
+    updateReceivingStocksData,
+  } = useData();
+
+  // Use context data or empty array as fallback
+  const orders = stocksData || [];
+  const recievingStocks = receivingStocksData || [];
+
   // Local loading states for individual actions (button-level loading)
   const [loadingActions, setLoadingActions] = useState({});
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Bulk transfer states
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -39,6 +52,51 @@ const YourStocks = () => {
       ...prev,
       [actionId]: isLoading
     }));
+  };
+
+  // Helper function to convert date formats and compare
+  const formatDateForComparison = (dateString) => {
+    if (!dateString) return null;
+    
+    // If date is in DD/MM/YYYY format (from stock data)
+    if (dateString.includes('/')) {
+      const parts = dateString.split('/');
+      if (parts.length === 3) {
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[2];
+        return `${year}-${month}-${day}`; // Convert to YYYY-MM-DD
+      }
+    }
+    
+    // If already in YYYY-MM-DD format
+    return dateString;
+  };
+
+  // Convert YYYY-MM-DD to DD/MM/YYYY format for API
+  const convertDateToAPIFormat = (dateString) => {
+    if (!dateString) return null;
+    
+    // If in YYYY-MM-DD format (from date input)
+    if (dateString.includes('-') && dateString.length === 10) {
+      const parts = dateString.split('-');
+      return `${parts[2]}/${parts[1]}/${parts[0]}`; // Convert to DD/MM/YYYY
+    }
+    
+    // If already in DD/MM/YYYY format
+    return dateString;
+  };
+
+  // Filter stocks by selected date
+  const filterStocksByDate = (stocks, selectedDate) => {
+    if (!selectedDate) return stocks;
+    
+    const formattedSelectedDate = formatDateForComparison(selectedDate);
+    
+    return stocks.filter(stock => {
+      const stockDate = formatDateForComparison(stock[1]); // stock[1] is the date
+      return stockDate === formattedSelectedDate;
+    });
   };
 
   const toggleView = () => {
@@ -81,73 +139,12 @@ const YourStocks = () => {
   const filteredOrders = filterStocks(orders);
   const filteredReceivingStocks = filterStocks(recievingStocks);
 
+  // Debug: Log when data changes
   useEffect(() => {
-    const fetchOrders = async () => {
-      // Only show full page loading on initial load
-      if (isInitialLoad) {
-        showLoading();
-      }
-      try {
-        const response = await fetch(`${SERVER_URL}/api/get-stock/${city}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          throw new Error(`No Orders`);
-        }
-
-        const data = await response.json();
-        setOrders(data.data || []);
-        setIsInitialLoad(false);
-      } catch (err) {
-        setError(err.message || "Failed to fetch Stocks.");
-        setIsInitialLoad(false);
-      } finally {
-        if (isInitialLoad) {
-          hideLoading();
-        }
-      }
-    };
-
-    const gettingRecievingStock = async () => {
-      try {
-        const response = await fetch(`${SERVER_URL}/api/get-stockRecieved?city=${city}`, {
-          method: 'GET',
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        // Handle 204 No Content response
-        if (response.status === 204) {
-          setRecievingStocks([]);
-          return;
-        }
-
-        const data = await response.json();
-        setRecievingStocks(data.data || [])
-      } catch (error) {
-        console.error("Error fetching receiving stocks:", error);
-        setError(error.message || "Failed to fetch receiving stocks.");
-      }
-    }
-
-    if (city == 'Bangladesh' || city == 'Kolkata') {
-      gettingRecievingStock();
-    }
-
-    fetchOrders();
-
-  }, [city]); // Removed showBulkModal dependency to prevent unnecessary re-fetches
+    console.log("MyStocks - stocksData updated:", stocksData?.length || 0, "items");
+    console.log("MyStocks - receivingStocksData updated:", receivingStocksData?.length || 0, "items");
+    console.log("MyStocks - isDataLoaded:", isDataLoaded);
+  }, [stocksData, receivingStocksData, isDataLoaded]);
 
   const sendToTransport = async (stockId) => {
     setActionLoading(`dispatch-${stockId}`, true);
@@ -166,8 +163,11 @@ const YourStocks = () => {
       }
 
       // Optimistic update - remove from UI immediately
-      setOrders((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
-      
+      updateStocksData((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+
+      // Refresh data to ensure sync
+      await refreshStocks();
+
       // Update the UI and show success modal
       setShowConfirmModal(false);
       setShowSuccessModal(true);
@@ -198,8 +198,11 @@ const YourStocks = () => {
       }
 
       // Optimistic update
-      setOrders((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
-      
+      updateStocksData((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+
+      // Refresh data to ensure sync
+      await refreshStocks();
+
       // Update the UI and show success modal
       setShowConfirmModal(false);
       setShowSuccessModal(true);
@@ -230,8 +233,12 @@ const YourStocks = () => {
       const newStock = await response.json()
 
       // Optimistic update
-      setRecievingStocks((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
-      setOrders((prevOrders) => [...prevOrders, newStock]);
+      updateReceivingStocksData((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+      updateStocksData((prevOrders) => [...prevOrders, newStock]);
+
+      // Refresh data to ensure sync
+      await Promise.all([refreshStocks(), refreshReceivingStocks()]);
+
       toast.success("Stock received successfully!");
     } catch (err) {
       setError(err.message || "Failed to receive stock.");
@@ -268,7 +275,10 @@ const YourStocks = () => {
       }
 
       // Optimistic update
-      setOrders((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+      updateStocksData((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+
+      // Refresh data to ensure sync
+      await refreshStocks();
 
       // Show success message
       setError(null);
@@ -299,8 +309,11 @@ const YourStocks = () => {
       const newStock = await response.json()
 
       // Optimistic update
-      setRecievingStocks((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
-      setOrders((prevOrders) => [...prevOrders, newStock]);
+      updateReceivingStocksData((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+      updateStocksData((prevOrders) => [...prevOrders, newStock]);
+
+      // Refresh data to ensure sync
+      await Promise.all([refreshStocks(), refreshReceivingStocks()]);
 
       // Show success message
       setError(null);
@@ -333,18 +346,24 @@ const YourStocks = () => {
   };
 
   const handleSelectAll = () => {
-    const currentStocks = bulkAction.includes('receive') ? filteredReceivingStocks : filteredOrders;
-    const availableStocks = currentStocks
+    // First filter by location/status
+    let currentStocks = bulkAction.includes('receive') ? filteredReceivingStocks : filteredOrders;
+    let availableStocks = currentStocks
       .filter(stock => {
         if (bulkAction === 'transfer-to-kolkata') return stock[10] === 'Surat';
         if (bulkAction === 'receive-from-surat') return stock[10] === 'Transport';
         if (bulkAction === 'transfer-to-bangladesh') return stock[10] === 'Kolkata';
         if (bulkAction === 'receive-from-kolkata') return stock[10] === 'Transport';
         return false;
-      })
-      .map(stock => stock[0]);
+      });
 
-    setSelectedStocks(availableStocks);
+    // Then filter by selected date if date is selected
+    const selectedDate = bulkAction.includes('transfer') ? transferDate : receiveDate;
+    if (selectedDate) {
+      availableStocks = filterStocksByDate(availableStocks, selectedDate);
+    }
+
+    setSelectedStocks(availableStocks.map(stock => stock[0]));
   };
 
   const executeBulkAction = async () => {
@@ -361,19 +380,27 @@ const YourStocks = () => {
       switch (bulkAction) {
         case 'transfer-to-kolkata':
           endpoint = '/bulk-transfer-to-kolkata';
-          requestBody.transferDate = transferDate || new Date().toLocaleDateString("en-IN");
+          requestBody.transferDate = transferDate 
+            ? convertDateToAPIFormat(transferDate) 
+            : new Date().toLocaleDateString("en-IN");
           break;
         case 'receive-from-surat':
           endpoint = '/bulk-receive-from-surat';
-          requestBody.receiveDate = receiveDate || new Date().toLocaleDateString("en-IN");
+          requestBody.receiveDate = receiveDate 
+            ? convertDateToAPIFormat(receiveDate) 
+            : new Date().toLocaleDateString("en-IN");
           break;
         case 'transfer-to-bangladesh':
           endpoint = '/bulk-transfer-to-bangladesh';
-          requestBody.transferDate = transferDate || new Date().toLocaleDateString("en-IN");
+          requestBody.transferDate = transferDate 
+            ? convertDateToAPIFormat(transferDate) 
+            : new Date().toLocaleDateString("en-IN");
           break;
         case 'receive-from-kolkata':
           endpoint = '/bulk-receive-from-kolkata';
-          requestBody.receiveDate = receiveDate || new Date().toLocaleDateString("en-IN");
+          requestBody.receiveDate = receiveDate 
+            ? convertDateToAPIFormat(receiveDate) 
+            : new Date().toLocaleDateString("en-IN");
           break;
         default:
           throw new Error('Invalid bulk action');
@@ -398,14 +425,16 @@ const YourStocks = () => {
       // Optimistic update
       if (bulkAction.includes('transfer')) {
         // Remove transferred stocks from current view
-        setOrders(prevOrders =>
+        updateStocksData(prevOrders =>
           prevOrders.filter(order => !selectedStocks.includes(order[0]))
         );
+        await refreshStocks();
       } else if (bulkAction.includes('receive')) {
         // Remove received stocks from receiving list
-        setRecievingStocks(prevStocks =>
+        updateReceivingStocksData(prevStocks =>
           prevStocks.filter(stock => !selectedStocks.includes(stock[0]))
         );
+        await Promise.all([refreshStocks(), refreshReceivingStocks()]);
       }
 
       setShowBulkModal(false);
@@ -441,22 +470,20 @@ const YourStocks = () => {
             <div className="bg-gray-100 rounded-xl p-1 flex">
               <button
                 className={`relative px-2 sm:px-4 py-2 rounded-lg transition-all duration-200 ${isTableView
-                    ? 'bg-white shadow-md text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white shadow-md text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
                   }`}
                 onClick={toggleView}
               >
                 <div className="flex items-center space-x-1 sm:space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0V4a1 1 0 011-1h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1z" />
-                  </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table-properties-icon lucide-table-properties"><path d="M15 3v18" /><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M21 9H3" /><path d="M21 15H3" /></svg>
                   <span className="text-xs sm:text-sm font-medium hidden sm:inline">Table</span>
                 </div>
               </button>
               <button
                 className={`relative px-2 sm:px-4 py-2 rounded-lg transition-all duration-200 ${!isTableView
-                    ? 'bg-white shadow-md text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white shadow-md text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
                   }`}
                 onClick={toggleView}
               >
@@ -864,9 +891,9 @@ const YourStocks = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{order[9]}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${order[10] === "Surat" ? "bg-green-100 text-green-800" :
-                              order[10] === "Kolkata" ? "bg-blue-100 text-blue-800" :
-                                order[10] === "Bangladesh" ? "bg-purple-100 text-purple-800" :
-                                  "bg-gray-100 text-gray-800"
+                            order[10] === "Kolkata" ? "bg-blue-100 text-blue-800" :
+                              order[10] === "Bangladesh" ? "bg-purple-100 text-purple-800" :
+                                "bg-gray-100 text-gray-800"
                             }`}>
                             {order[10]}
                           </span>
@@ -1102,10 +1129,11 @@ const YourStocks = () => {
                   </div>
                 </div>
 
-                {/* Date Selection */}
+                {/* Date Selection - Acts as Filter */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {bulkAction.includes('transfer') ? 'Transfer Date' : 'Receive Date'}
+                    {bulkAction.includes('transfer') ? 'Filter by Stock Date (Transfer Date)' : 'Filter by Stock Date (Receive Date)'}
+                    <span className="text-xs text-gray-500 ml-2">(Select date to filter stocks added on that date)</span>
                   </label>
                   <input
                     type="date"
@@ -1113,12 +1141,19 @@ const YourStocks = () => {
                     onChange={(e) => {
                       if (bulkAction.includes('transfer')) {
                         setTransferDate(e.target.value);
+                        setSelectedStocks([]); // Clear selection when date changes
                       } else {
                         setReceiveDate(e.target.value);
+                        setSelectedStocks([]); // Clear selection when date changes
                       }
                     }}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                   />
+                  {(bulkAction.includes('transfer') ? transferDate : receiveDate) && (
+                    <p className="mt-2 text-xs text-blue-600">
+                      Showing stocks added on: {(bulkAction.includes('transfer') ? transferDate : receiveDate)}
+                    </p>
+                  )}
                 </div>
 
                 {/* Stock Selection */}
@@ -1134,16 +1169,26 @@ const YourStocks = () => {
                   </div>
 
                   <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-xl">
-                    {(bulkAction.includes('receive') ? filteredReceivingStocks : filteredOrders)
-                      .filter(stock => {
-                        const isTransferToKolkata = bulkAction === 'transfer-to-kolkata' && stock[10] === 'Surat';
-                        const isReceiveFromSurat = bulkAction === 'receive-from-surat' && stock[10] === 'Transport';
-                        const isTransferToBangladesh = bulkAction === 'transfer-to-bangladesh' && stock[10] === 'Kolkata';
-                        const isReceiveFromKolkata = bulkAction === 'receive-from-kolkata' && stock[10] === 'Transport';
+                    {(() => {
+                      // First filter by location/status
+                      let availableStocks = (bulkAction.includes('receive') ? filteredReceivingStocks : filteredOrders)
+                        .filter(stock => {
+                          const isTransferToKolkata = bulkAction === 'transfer-to-kolkata' && stock[10] === 'Surat';
+                          const isReceiveFromSurat = bulkAction === 'receive-from-surat' && stock[10] === 'Transport';
+                          const isTransferToBangladesh = bulkAction === 'transfer-to-bangladesh' && stock[10] === 'Kolkata';
+                          const isReceiveFromKolkata = bulkAction === 'receive-from-kolkata' && stock[10] === 'Transport';
 
-                        return isTransferToKolkata || isReceiveFromSurat || isTransferToBangladesh || isReceiveFromKolkata;
-                      })
-                      .map((stock, index) => (
+                          return isTransferToKolkata || isReceiveFromSurat || isTransferToBangladesh || isReceiveFromKolkata;
+                        });
+
+                      // Then filter by selected date if date is selected
+                      const selectedDate = bulkAction.includes('transfer') ? transferDate : receiveDate;
+                      if (selectedDate) {
+                        availableStocks = filterStocksByDate(availableStocks, selectedDate);
+                      }
+
+                      return availableStocks.length > 0 ? (
+                        availableStocks.map((stock, index) => (
                         <div
                           key={stock[0]}
                           className="flex items-center space-x-3 p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
@@ -1165,7 +1210,29 @@ const YourStocks = () => {
                             </div>
                           </div>
                         </div>
-                      ))}
+                        ))
+                      ) : (
+                        <div className="p-6 text-center text-gray-500">
+                          {selectedDate ? (
+                            <div>
+                              <svg className="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              <p className="text-sm font-medium">No stocks found for the selected date</p>
+                              <p className="text-xs mt-1">Try selecting a different date or clear the date filter</p>
+                            </div>
+                          ) : (
+                            <div>
+                              <svg className="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <p className="text-sm font-medium">Select a date to filter stocks</p>
+                              <p className="text-xs mt-1">Choose a date above to see stocks added on that specific date</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {selectedStocks.length > 0 && (

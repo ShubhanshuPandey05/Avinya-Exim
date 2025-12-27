@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useLoading } from "../context/LoadingContext";
+import { useData } from "../context/DataContext";
 
 export default function AddSale() {
   const SERVER_URL = import.meta.env.VITE_SERVERURL;
@@ -24,7 +25,7 @@ export default function AddSale() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [itemOptions, setItemOptions] = useState([]);
   const { showLoading, hideLoading } = useLoading();
-  const [getStock, setGetStock] = useState(false);
+  const { stocksData, refreshSales, refreshStocks, isDataLoaded } = useData();
   const [dropdownOpen, setDropdownOpen] = useState({});
   const [filteredOptions, setFilteredOptions] = useState({});
 
@@ -52,34 +53,18 @@ export default function AddSale() {
     setDropdownOpen((prev) => ({ ...prev, [index]: isOpen }));
   };
 
+  // Use stocks data from context instead of fetching
   useEffect(() => {
-    async function fetchItems() {
-      try {
-        showLoading();
-        const response = await fetch(`${SERVER_URL}/api/get-stock/${city}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-        const data = await response.json();
-        setItemOptions(data.data);
-        hideLoading();
-
-      } catch (error) {
-        console.error("Error fetching item names:", error);
-        toast.error('No items fetched try again later')
-        let token = getCookie("jwt")
-        if (!token) {
-          localStorage.removeItem("authUser");
-          window.location.reload();
-        }
-        hideLoading();
-      }
+    if (stocksData && stocksData.length > 0) {
+      setItemOptions(stocksData);
+    } else if (isDataLoaded && (!stocksData || stocksData.length === 0)) {
+      // If data is loaded but empty, try to refresh
+      refreshStocks().then(() => {
+        // After refresh, the stocksData will update and trigger this effect again
+      });
     }
-    fetchItems();
-  }, [getStock]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stocksData, isDataLoaded]);
 
   const handleItemChange = (index, field, value) => {
     const updatedItems = [...items];
@@ -159,6 +144,14 @@ export default function AddSale() {
         setPaymentStatus("due")
         setAmountReceived("")
         setShowSuccessModal(true);
+        // Refresh data immediately to update context
+        try {
+          await Promise.all([refreshSales(), refreshStocks()]);
+          toast.success("Sale added and data refreshed successfully!");
+        } catch (error) {
+          console.error("Error refreshing data:", error);
+          toast.error("Sale added but failed to refresh data. Please refresh the page manually.");
+        }
       } else {
         const jwt = getCookie('jwt');
         if (!jwt) {
@@ -172,7 +165,6 @@ export default function AddSale() {
       console.error("Error updating spreadsheet:", error);
       setShowConfirmModal(false)
     }
-    setGetStock(!getStock)
     hideLoading();
   };
 
@@ -224,7 +216,7 @@ export default function AddSale() {
             <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6">
               <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Party Name *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Party Name</label>
                   <input
                     type="text"
                     name="partyName"
@@ -233,11 +225,10 @@ export default function AddSale() {
                     placeholder="Enter party name"
                     onChange={(e) => setPartyName(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Person Name *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Person Name </label>
                   <input
                     type="text"
                     name="personName"
@@ -246,11 +237,10 @@ export default function AddSale() {
                     placeholder="Enter person name"
                     onChange={(e) => setPersonName(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Contact No. *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Contact No. </label>
                   <input
                     type="text"
                     name="ContactNo"
@@ -259,7 +249,6 @@ export default function AddSale() {
                     placeholder="Enter contact number"
                     onChange={(e) => setContactNo(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-                    required
                   />
                 </div>
               </div>

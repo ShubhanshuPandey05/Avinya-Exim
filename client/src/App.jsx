@@ -7,6 +7,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuthContext } from './context/authContext';
 
 import { LoadingProvider } from './context/LoadingContext';
+import { DataProvider } from './context/DataContext';
 import LoadingScreen from './components/LoadingScreen';
 import BottomNavBar from './components/BottomNavBar';
 import LoginPage from './pages/LoginPage';
@@ -121,16 +122,18 @@ function App() {
 
   return (
     <LoadingProvider>
-      <>
-        <Toaster />
-        <Router>
-          <div className="pb-16 sm:pb-0">
-            <Routes>{getRoutes()}</Routes>
-          </div>
-          {isAuth && city != "Kolkata" ? <BottomNavBar /> : ""}
-        </Router>
-        <LoadingScreen />
-      </>
+      <DataProvider>
+        <>
+          <Toaster />
+          <Router>
+            <div className="pb-16 sm:pb-0">
+              <Routes>{getRoutes()}</Routes>
+            </div>
+            {isAuth && city != "Kolkata" ? <BottomNavBar /> : ""}
+          </Router>
+          <LoadingScreen />
+        </>
+      </DataProvider>
     </LoadingProvider>
   );
 }
