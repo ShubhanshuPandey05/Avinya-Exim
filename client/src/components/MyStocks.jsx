@@ -20,6 +20,11 @@ const YourStocks = () => {
   const [error, setError] = useState(null);
   const { showLoading, hideLoading } = useLoading();
   const [isTableView, setIsTableView] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Local loading states for individual actions (button-level loading)
+  const [loadingActions, setLoadingActions] = useState({});
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Bulk transfer states
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -28,13 +33,60 @@ const YourStocks = () => {
   const [receiveDate, setReceiveDate] = useState('');
   const [bulkAction, setBulkAction] = useState(''); // 'transfer-to-kolkata', 'receive-from-surat', 'transfer-to-bangladesh', 'receive-from-kolkata'
 
+  // Helper function to set loading for a specific action
+  const setActionLoading = (actionId, isLoading) => {
+    setLoadingActions(prev => ({
+      ...prev,
+      [actionId]: isLoading
+    }));
+  };
+
   const toggleView = () => {
     setIsTableView(!isTableView);
   };
 
+  // Search filter function
+  const filterStocks = (stocks) => {
+    if (!searchQuery.trim()) {
+      return stocks;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return stocks.filter((stock) => {
+      // Search in StockID (order[0])
+      const stockId = String(stock[0] || "").toLowerCase();
+      // Search in Date (order[1])
+      const date = String(stock[1] || "").toLowerCase();
+      // Search in Bale No. (order[3])
+      const baleNo = String(stock[3] || "").toLowerCase();
+      // Search in Item Name (order[4])
+      const itemName = String(stock[4] || "").toLowerCase();
+      // Search in Color (order[5])
+      const color = String(stock[5] || "").toLowerCase();
+      // Search in Location (order[10])
+      const location = String(stock[10] || "").toLowerCase();
+
+      return (
+        stockId.includes(query) ||
+        date.includes(query) ||
+        baleNo.includes(query) ||
+        itemName.includes(query) ||
+        color.includes(query) ||
+        location.includes(query)
+      );
+    });
+  };
+
+  // Get filtered stocks
+  const filteredOrders = filterStocks(orders);
+  const filteredReceivingStocks = filterStocks(recievingStocks);
+
   useEffect(() => {
     const fetchOrders = async () => {
-      showLoading();
+      // Only show full page loading on initial load
+      if (isInitialLoad) {
+        showLoading();
+      }
       try {
         const response = await fetch(`${SERVER_URL}/api/get-stock/${city}`, {
           method: "GET",
@@ -45,15 +97,19 @@ const YourStocks = () => {
         });
 
         if (!response.ok) {
-          new Error(`No Orders`);
+          throw new Error(`No Orders`);
         }
 
         const data = await response.json();
         setOrders(data.data || []);
+        setIsInitialLoad(false);
       } catch (err) {
         setError(err.message || "Failed to fetch Stocks.");
+        setIsInitialLoad(false);
       } finally {
-        hideLoading();
+        if (isInitialLoad) {
+          hideLoading();
+        }
       }
     };
 
@@ -70,18 +126,14 @@ const YourStocks = () => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        console.log("Receiving stocks response:", response);
 
         // Handle 204 No Content response
         if (response.status === 204) {
-          console.log("No stocks to receive (204 No Content)");
           setRecievingStocks([]);
           return;
         }
 
         const data = await response.json();
-        console.log("Receiving stocks data:", data.data);
-
         setRecievingStocks(data.data || [])
       } catch (error) {
         console.error("Error fetching receiving stocks:", error);
@@ -90,17 +142,15 @@ const YourStocks = () => {
     }
 
     if (city == 'Bangladesh' || city == 'Kolkata') {
-      if (!showBulkModal) {
-        gettingRecievingStock();
-      }
+      gettingRecievingStock();
     }
 
     fetchOrders();
 
-  }, [city, showBulkModal]);
+  }, [city]); // Removed showBulkModal dependency to prevent unnecessary re-fetches
 
   const sendToTransport = async (stockId) => {
-    showLoading();
+    setActionLoading(`dispatch-${stockId}`, true);
     try {
       const response = await fetch(`${SERVER_URL}/api/stocks-dispatching`, {
         method: "POST",
@@ -115,20 +165,24 @@ const YourStocks = () => {
         throw new Error("Failed to dispatch stock.");
       }
 
+      // Optimistic update - remove from UI immediately
+      setOrders((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+      
       // Update the UI and show success modal
       setShowConfirmModal(false);
       setShowSuccessModal(true);
-
-      // Remove the dispatched stock from the orders
-      setOrders((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+      toast.success("Stock dispatched successfully!");
     } catch (err) {
       setError(err.message || "Failed to dispatch stock.");
+      toast.error(err.message || "Failed to dispatch stock.");
+      // On error, we could re-fetch to sync state, but for now just show error
+    } finally {
+      setActionLoading(`dispatch-${stockId}`, false);
     }
-    hideLoading();
   };
 
   const transferToBangladesh = async (stockId) => {
-    showLoading();
+    setActionLoading(`transfer-bd-${stockId}`, true);
     try {
       const response = await fetch(`${SERVER_URL}/api/transfer-to-bangladesh`, {
         method: "POST",
@@ -143,20 +197,23 @@ const YourStocks = () => {
         throw new Error("Failed to transfer stock to Bangladesh.");
       }
 
+      // Optimistic update
+      setOrders((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+      
       // Update the UI and show success modal
       setShowConfirmModal(false);
       setShowSuccessModal(true);
-
-      // Remove the transferred stock from the orders
-      setOrders((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+      toast.success("Stock transferred to Bangladesh successfully!");
     } catch (err) {
       setError(err.message || "Failed to transfer stock to Bangladesh.");
+      toast.error(err.message || "Failed to transfer stock to Bangladesh.");
+    } finally {
+      setActionLoading(`transfer-bd-${stockId}`, false);
     }
-    hideLoading();
   };
 
   const recieveFromTransport = async (stockId) => {
-    showLoading();
+    setActionLoading(`receive-${stockId}`, true);
     try {
       const response = await fetch(`${SERVER_URL}/api/stocks-recieving`, {
         method: "POST",
@@ -168,17 +225,20 @@ const YourStocks = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to dispatch stock.");
+        throw new Error("Failed to receive stock.");
       }
       const newStock = await response.json()
 
-      // Remove the dispatched stock from the orders
+      // Optimistic update
       setRecievingStocks((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
       setOrders((prevOrders) => [...prevOrders, newStock]);
+      toast.success("Stock received successfully!");
     } catch (err) {
-      setError(err.message || "Failed to dispatch stock.");
+      setError(err.message || "Failed to receive stock.");
+      toast.error(err.message || "Failed to receive stock.");
+    } finally {
+      setActionLoading(`receive-${stockId}`, false);
     }
-    hideLoading();
   };
 
   const onConfirmDispatch = (stockId) => {
@@ -192,7 +252,7 @@ const YourStocks = () => {
   };
 
   const transferToKolkata = async (stockId) => {
-    showLoading();
+    setActionLoading(`transfer-kolkata-${stockId}`, true);
     try {
       const response = await fetch(`${SERVER_URL}/api/transfer-to-kolkata`, {
         method: "POST",
@@ -207,7 +267,7 @@ const YourStocks = () => {
         throw new Error("Failed to transfer stock to Kolkata.");
       }
 
-      // Remove the transferred stock from the orders
+      // Optimistic update
       setOrders((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
 
       // Show success message
@@ -215,12 +275,14 @@ const YourStocks = () => {
       toast.success("Stock transferred to Kolkata successfully!");
     } catch (err) {
       setError(err.message || "Failed to transfer stock to Kolkata.");
+      toast.error(err.message || "Failed to transfer stock to Kolkata.");
+    } finally {
+      setActionLoading(`transfer-kolkata-${stockId}`, false);
     }
-    hideLoading();
   };
 
   const receiveFromSurat = async (stockId) => {
-    showLoading();
+    setActionLoading(`receive-surat-${stockId}`, true);
     try {
       const response = await fetch(`${SERVER_URL}/api/receive-from-surat`, {
         method: "POST",
@@ -236,9 +298,8 @@ const YourStocks = () => {
       }
       const newStock = await response.json()
 
-      // Remove the received stock from the receiving list
+      // Optimistic update
       setRecievingStocks((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
-      // Add to main orders list
       setOrders((prevOrders) => [...prevOrders, newStock]);
 
       // Show success message
@@ -246,8 +307,10 @@ const YourStocks = () => {
       toast.success("Stock received from Surat successfully!");
     } catch (err) {
       setError(err.message || "Failed to receive stock from Surat.");
+      toast.error(err.message || "Failed to receive stock from Surat.");
+    } finally {
+      setActionLoading(`receive-surat-${stockId}`, false);
     }
-    hideLoading();
   };
 
   // Bulk transfer functions
@@ -270,7 +333,7 @@ const YourStocks = () => {
   };
 
   const handleSelectAll = () => {
-    const currentStocks = bulkAction.includes('receive') ? recievingStocks : orders;
+    const currentStocks = bulkAction.includes('receive') ? filteredReceivingStocks : filteredOrders;
     const availableStocks = currentStocks
       .filter(stock => {
         if (bulkAction === 'transfer-to-kolkata') return stock[10] === 'Surat';
@@ -290,12 +353,7 @@ const YourStocks = () => {
       return;
     }
 
-    console.log('Executing bulk action:', bulkAction);
-    console.log('Selected stocks:', selectedStocks);
-    console.log('Transfer date:', transferDate);
-    console.log('Receive date:', receiveDate);
-
-    showLoading();
+    setActionLoading('bulk-action', true);
     try {
       let endpoint = '';
       let requestBody = { stockIds: selectedStocks };
@@ -337,14 +395,14 @@ const YourStocks = () => {
 
       const result = await response.json();
 
-      // Update local state
+      // Optimistic update
       if (bulkAction.includes('transfer')) {
         // Remove transferred stocks from current view
         setOrders(prevOrders =>
           prevOrders.filter(order => !selectedStocks.includes(order[0]))
         );
       } else if (bulkAction.includes('receive')) {
-        // Remove received stocks from receiving list and add to main orders
+        // Remove received stocks from receiving list
         setRecievingStocks(prevStocks =>
           prevStocks.filter(stock => !selectedStocks.includes(stock[0]))
         );
@@ -357,7 +415,7 @@ const YourStocks = () => {
     } catch (err) {
       toast.error(err.message || 'Failed to execute bulk action');
     } finally {
-      hideLoading();
+      setActionLoading('bulk-action', false);
     }
   };
 
@@ -415,6 +473,44 @@ const YourStocks = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Universal Search Bar */}
+        <div className="mb-6">
+          <div className="bg-white rounded-2xl shadow-lg p-4">
+            <div className="flex items-center space-x-3">
+              <div className="flex-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by StockID, Date, Bale No., Item Name, Color, or Location..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {searchQuery && (
+              <div className="mt-2 text-sm text-gray-600">
+                Showing {filteredOrders.length} of {orders.length} stocks
+                {filteredReceivingStocks.length > 0 && (
+                  <span>, {filteredReceivingStocks.length} receiving stocks</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Receiving Stocks Section */}
         {(city == "Bangladesh" || city == "Kolkata") && recievingStocks.length > 0 && (
           <div className="mb-8">
@@ -483,7 +579,7 @@ const YourStocks = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {recievingStocks.map((order, index) => (
+                      {filteredReceivingStocks.map((order, index) => (
                         <tr
                           key={index}
                           className={`hover:bg-gray-50 transition-colors duration-200 ${parseInt(order[13]) < 1 ? "bg-red-50 border-l-4 border-red-400" : ""
@@ -538,10 +634,17 @@ const YourStocks = () => {
                           </td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm font-medium">
                             <button
-                              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-xs sm:text-sm"
+                              disabled={loadingActions[city == "Kolkata" ? `receive-surat-${order[0]}` : `receive-${order[0]}`]}
+                              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                               onClick={() => city == "Kolkata" ? receiveFromSurat(order[0]) : recieveFromTransport(order[0])}
                             >
-                              {city == "Kolkata" ? "Receive from Surat" : "Receive"}
+                              {loadingActions[city == "Kolkata" ? `receive-surat-${order[0]}` : `receive-${order[0]}`] && (
+                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              )}
+                              <span>{city == "Kolkata" ? "Receive from Surat" : "Receive"}</span>
                             </button>
                           </td>
                         </tr>
@@ -552,7 +655,7 @@ const YourStocks = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-20">
-                {recievingStocks.map((order, index) => (
+                {filteredReceivingStocks.map((order, index) => (
                   <div
                     key={index}
                     className={`rounded-2xl p-4 sm:p-6 shadow-xl duration-300 transform hover:-translate-y-2 ${parseInt(order[13]) < 1 ? "bg-red-50 border border-red-200" : "bg-white border border-gray-100"
@@ -603,10 +706,17 @@ const YourStocks = () => {
                       </div>
                       <div className="mt-3">
                         <button
-                          className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-medium hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                          disabled={loadingActions[city == "Kolkata" ? `receive-surat-${order[0]}` : `receive-${order[0]}`]}
+                          className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-medium hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                           onClick={() => city == "Kolkata" ? receiveFromSurat(order[0]) : recieveFromTransport(order[0])}
                         >
-                          {city == "Kolkata" ? "Receive from Surat" : "Receive"}
+                          {loadingActions[city == "Kolkata" ? `receive-surat-${order[0]}` : `receive-${order[0]}`] && (
+                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          )}
+                          <span>{city == "Kolkata" ? "Receive from Surat" : "Receive"}</span>
                         </button>
                       </div>
                     </div>
@@ -635,13 +745,13 @@ const YourStocks = () => {
               <div className="flex items-center space-x-3">
                 <div className="bg-white/20 px-3 sm:px-4 py-2 rounded-xl">
                   <div className="text-center">
-                    <div className="text-lg sm:text-2xl font-bold">{orders.length}</div>
-                    <div className="text-xs text-green-100">Total Stocks</div>
+                    <div className="text-lg sm:text-2xl font-bold">{searchQuery ? filteredOrders.length : orders.length}</div>
+                    <div className="text-xs text-green-100">{searchQuery ? 'Filtered' : 'Total'} Stocks</div>
                   </div>
                 </div>
 
                 {/* Bulk Action Buttons */}
-                {city === "Surat" && orders.some(order => order[10] === "Surat") && (
+                {city === "Surat" && filteredOrders.some(order => order[10] === "Surat") && (
                   <button
                     onClick={() => handleBulkAction('transfer-to-kolkata')}
                     className="bg-white/20 hover:bg-white/30 px-3 sm:px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2"
@@ -654,7 +764,7 @@ const YourStocks = () => {
                   </button>
                 )}
 
-                {city === "Kolkata" && orders.some(order => order[10] === "Kolkata") && (
+                {city === "Kolkata" && filteredOrders.some(order => order[10] === "Kolkata") && (
                   <button
                     onClick={() => handleBulkAction('transfer-to-bangladesh')}
                     className="bg-white/20 hover:bg-white/30 px-3 sm:px-4 py-2 rounded-xl transition-all duration-200 flex items-center space-x-2"
@@ -681,7 +791,19 @@ const YourStocks = () => {
             </div>
           )}
 
-          {orders.length === 0 && !error && (
+          {filteredOrders.length === 0 && orders.length > 0 && searchQuery && (
+            <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
+              <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No stocks found</h3>
+              <p className="text-gray-500">Try adjusting your search query.</p>
+            </div>
+          )}
+
+          {orders.length === 0 && !error && !searchQuery && (
             <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
               <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -717,7 +839,7 @@ const YourStocks = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {orders.map((order, index) => (
+                    {filteredOrders.map((order, index) => (
                       <tr
                         key={index}
                         className={`hover:bg-gray-50 transition-colors duration-200 ${parseInt(order[13]) < 1 ? "bg-red-50 border-l-4 border-red-400" : ""
@@ -787,10 +909,17 @@ const YourStocks = () => {
                         {city === "Surat" && order[10] === "Surat" && (
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                              disabled={loadingActions[`transfer-kolkata-${order[0]}`]}
+                              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                               onClick={() => transferToKolkata(order[0])}
                             >
-                              Transfer to Kolkata
+                              {loadingActions[`transfer-kolkata-${order[0]}`] && (
+                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              )}
+                              <span>Transfer to Kolkata</span>
                             </button>
                           </td>
                         )}
@@ -802,7 +931,7 @@ const YourStocks = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 mb-20 lg:grid-cols-3 gap-6 p-2">
-              {orders.map((order, index) => (
+              {filteredOrders.map((order, index) => (
                 <div
                   key={index}
                   className={`rounded-lg p-4 shadow-md duration-300 transform hover:-translate-y-2 ${parseInt(order[13]) < 1 ? "bg-red-100" : "bg-white"
@@ -864,10 +993,17 @@ const YourStocks = () => {
                     {city === "Surat" && order[10] === "Surat" && (
                       <div>
                         <button
-                          className="w-32 bg-green-700 text-white p-1 rounded-xl my-2"
+                          disabled={loadingActions[`transfer-kolkata-${order[0]}`]}
+                          className="w-32 bg-green-700 text-white p-1 rounded-xl my-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                           onClick={() => transferToKolkata(order[0])}
                         >
-                          Transfer to Kolkata
+                          {loadingActions[`transfer-kolkata-${order[0]}`] && (
+                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          )}
+                          <span>Transfer to Kolkata</span>
                         </button>
                       </div>
                     )}
@@ -998,23 +1134,12 @@ const YourStocks = () => {
                   </div>
 
                   <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-xl">
-                    {(bulkAction.includes('receive') ? recievingStocks : orders)
+                    {(bulkAction.includes('receive') ? filteredReceivingStocks : filteredOrders)
                       .filter(stock => {
                         const isTransferToKolkata = bulkAction === 'transfer-to-kolkata' && stock[10] === 'Surat';
                         const isReceiveFromSurat = bulkAction === 'receive-from-surat' && stock[10] === 'Transport';
                         const isTransferToBangladesh = bulkAction === 'transfer-to-bangladesh' && stock[10] === 'Kolkata';
                         const isReceiveFromKolkata = bulkAction === 'receive-from-kolkata' && stock[10] === 'Transport';
-
-                        console.log(`Stock ${stock[0]}:`, {
-                          action: bulkAction,
-                          city: stock[10],
-                          status: stock[15],
-                          isTransferToKolkata,
-                          isReceiveFromSurat,
-                          isTransferToBangladesh,
-                          isReceiveFromKolkata,
-                          matches: isTransferToKolkata || isReceiveFromSurat || isTransferToBangladesh || isReceiveFromKolkata
-                        });
 
                         return isTransferToKolkata || isReceiveFromSurat || isTransferToBangladesh || isReceiveFromKolkata;
                       })
@@ -1065,10 +1190,16 @@ const YourStocks = () => {
                   </button>
                   <button
                     onClick={executeBulkAction}
-                    disabled={selectedStocks.length === 0}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={selectedStocks.length === 0 || loadingActions['bulk-action']}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
-                    {bulkAction.includes('transfer') ? 'Transfer' : 'Receive'} ({selectedStocks.length})
+                    {loadingActions['bulk-action'] && (
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    <span>{bulkAction.includes('transfer') ? 'Transfer' : 'Receive'} ({selectedStocks.length})</span>
                   </button>
                 </div>
               </div>
