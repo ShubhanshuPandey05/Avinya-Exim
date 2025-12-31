@@ -293,6 +293,7 @@ export default function MySales() {
                         <th className="px-2 sm:px-3 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">Bale No</th>
                         <th className="px-2 sm:px-3 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">Item Name</th>
                         <th className="px-2 sm:px-3 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">Color</th>
+                        <th className="px-2 sm:px-3 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">Color Code</th>
                         <th className="px-2 sm:px-3 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">Pcs</th>
                         <th className="px-2 sm:px-3 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">Mtrs</th>
                         <th className="px-2 sm:px-3 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">Rate</th>
@@ -331,6 +332,7 @@ export default function MySales() {
                               {order[8]}
                             </span>
                           </td>
+                          <td className="px-2 sm:px-3 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{order[17] || '-'}</td>
                           <td className="px-2 sm:px-3 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 text-right">{order[9]}</td>
                           <td className="px-2 sm:px-3 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 text-right">{order[10]} Mtr</td>
                           <td className="px-2 sm:px-3 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 text-right">₹{order[11]}</td>
@@ -384,6 +386,7 @@ export default function MySales() {
                             <span className="text-xs sm:text-sm">Total</span>
                           </div>
                         </td>
+                        <td className="px-2 sm:px-3 py-3 sm:py-4 text-xs sm:text-sm text-gray-700"></td>
                         <td className="px-2 sm:px-3 py-3 sm:py-4 text-xs sm:text-sm text-gray-700"></td>
                         <td className="px-2 sm:px-3 py-3 sm:py-4 text-xs sm:text-sm text-gray-700"></td>
                         <td className="px-2 sm:px-3 py-3 sm:py-4 text-xs sm:text-sm text-gray-700"></td>
@@ -450,6 +453,11 @@ export default function MySales() {
                         <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {order[8]}
                         </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs sm:text-sm font-medium text-gray-600">Color Code</span>
+                        <span className="text-xs sm:text-sm text-gray-900">{order[17] || '-'}</span>
                       </div>
 
                       <div className="space-y-2 sm:space-y-3 pt-2 sm:pt-3 border-t border-gray-100">

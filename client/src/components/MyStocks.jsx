@@ -121,6 +121,8 @@ const YourStocks = () => {
       const itemName = String(stock[4] || "").toLowerCase();
       // Search in Color (order[5])
       const color = String(stock[5] || "").toLowerCase();
+      // Search in Color (order[5])
+      const colorcode = String(stock[17] || "").toLowerCase();
       // Search in Location (order[10])
       const location = String(stock[10] || "").toLowerCase();
 
@@ -130,6 +132,7 @@ const YourStocks = () => {
         baleNo.includes(query) ||
         itemName.includes(query) ||
         color.includes(query) ||
+        colorcode.includes(query) ||
         location.includes(query)
       );
     });
@@ -163,7 +166,7 @@ const YourStocks = () => {
       }
 
       // Optimistic update - remove from UI immediately
-      updateStocksData((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+      updateStocksData((prevOrders) => (prevOrders || []).filter((order) => order[0] !== stockId));
 
       // Refresh data to ensure sync
       await refreshStocks();
@@ -198,7 +201,7 @@ const YourStocks = () => {
       }
 
       // Optimistic update
-      updateStocksData((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+      updateStocksData((prevOrders) => (prevOrders || []).filter((order) => order[0] !== stockId));
 
       // Refresh data to ensure sync
       await refreshStocks();
@@ -230,11 +233,21 @@ const YourStocks = () => {
       if (!response.ok) {
         throw new Error("Failed to receive stock.");
       }
-      const newStock = await response.json()
+      const responseData = await response.json();
+
+      // Backend returns the stock row as an array directly
+      // Ensure we have a valid array
+      if (!Array.isArray(responseData)) {
+        console.error("Invalid response format:", responseData);
+        throw new Error("Invalid response format from server.");
+      }
 
       // Optimistic update
-      updateReceivingStocksData((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
-      updateStocksData((prevOrders) => [...prevOrders, newStock]);
+      updateReceivingStocksData((prevOrders) => (prevOrders || []).filter((order) => order[0] !== stockId));
+      updateStocksData((prevOrders) => {
+        const prev = prevOrders || [];
+        return [...prev, responseData];
+      });
 
       // Refresh data to ensure sync
       await Promise.all([refreshStocks(), refreshReceivingStocks()]);
@@ -249,6 +262,10 @@ const YourStocks = () => {
   };
 
   const onConfirmDispatch = (stockId) => {
+    // Prevent opening modal if action is already in progress
+    if (loadingActions[`transfer-bd-${stockId}`] || loadingActions[`dispatch-${stockId}`]) {
+      return;
+    }
     setSelectedStockId(stockId);
     setShowConfirmModal(true);
   };
@@ -275,7 +292,7 @@ const YourStocks = () => {
       }
 
       // Optimistic update
-      updateStocksData((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
+      updateStocksData((prevOrders) => (prevOrders || []).filter((order) => order[0] !== stockId));
 
       // Refresh data to ensure sync
       await refreshStocks();
@@ -306,11 +323,21 @@ const YourStocks = () => {
       if (!response.ok) {
         throw new Error("Failed to receive stock from Surat.");
       }
-      const newStock = await response.json()
+      const responseData = await response.json();
+
+      // Backend returns the stock row as an array directly
+      // Ensure we have a valid array
+      if (!Array.isArray(responseData)) {
+        console.error("Invalid response format:", responseData);
+        throw new Error("Invalid response format from server.");
+      }
 
       // Optimistic update
-      updateReceivingStocksData((prevOrders) => prevOrders.filter((order) => order[0] !== stockId));
-      updateStocksData((prevOrders) => [...prevOrders, newStock]);
+      updateReceivingStocksData((prevOrders) => (prevOrders || []).filter((order) => order[0] !== stockId));
+      updateStocksData((prevOrders) => {
+        const prev = prevOrders || [];
+        return [...prev, responseData];
+      });
 
       // Refresh data to ensure sync
       await Promise.all([refreshStocks(), refreshReceivingStocks()]);
@@ -426,13 +453,13 @@ const YourStocks = () => {
       if (bulkAction.includes('transfer')) {
         // Remove transferred stocks from current view
         updateStocksData(prevOrders =>
-          prevOrders.filter(order => !selectedStocks.includes(order[0]))
+          (prevOrders || []).filter(order => !selectedStocks.includes(order[0]))
         );
         await refreshStocks();
       } else if (bulkAction.includes('receive')) {
         // Remove received stocks from receiving list
         updateReceivingStocksData(prevStocks =>
-          prevStocks.filter(stock => !selectedStocks.includes(stock[0]))
+          (prevStocks || []).filter(stock => !selectedStocks.includes(stock[0]))
         );
         await Promise.all([refreshStocks(), refreshReceivingStocks()]);
       }
@@ -595,6 +622,7 @@ const YourStocks = () => {
                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">Bale No.</th>
                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider hidden sm:table-cell">Item Name</th>
                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider hidden md:table-cell">Color</th>
+                        <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider hidden md:table-cell">Color Code</th>
                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">Pcs</th>
                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">Quantity</th>
                         <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold uppercase tracking-wider">Rate</th>
@@ -625,6 +653,7 @@ const YourStocks = () => {
                               {order[5]}
                             </span>
                           </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden md:table-cell text-xs sm:text-sm text-gray-900">{order[17] || '-'}</td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{order[6]}</td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{order[7]} Mtr</td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{order[8]}</td>
@@ -714,6 +743,7 @@ const YourStocks = () => {
                         <div className="text-xs sm:text-sm font-semibold text-gray-600">Qty: {order[7]} Mtr</div>
                         <div className="text-xs sm:text-sm font-semibold text-gray-600">Pcs: {order[6]}</div>
                       </div>
+                      <div className="text-xs sm:text-sm text-gray-600 font-semibold mt-1">Color Code: {order[17] || '-'}</div>
                       {order[15] === "yes" || order[15] === "Yes" ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                           <div className="text-gray-600 font-semibold text-xs sm:text-sm">Dispatch: {order[11]}</div>
@@ -852,8 +882,9 @@ const YourStocks = () => {
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Date</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Bale No.</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Item Name</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Color</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Pcs</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Color</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Color Code</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Pcs</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Quantity</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Rate</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider">Amount</th>
@@ -885,6 +916,7 @@ const YourStocks = () => {
                             {order[5]}
                           </span>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order[17] || '-'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order[6]}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order[7]} Mtr</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order[8]}</td>
@@ -926,10 +958,17 @@ const YourStocks = () => {
                         {city === "Kolkata" && (
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                              disabled={loadingActions[`transfer-bd-${order[0]}`]}
+                              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                               onClick={() => onConfirmDispatch(order[0])}
                             >
-                              Transfer to Bangladesh
+                              {loadingActions[`transfer-bd-${order[0]}`] && (
+                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              )}
+                              <span>Transfer to Bangladesh</span>
                             </button>
                           </td>
                         )}
@@ -983,13 +1022,14 @@ const YourStocks = () => {
                     </div>
                   </div>
 
-                  <div className="text-gray-700 mt-2">
-                    <div className="font-bold text-lg">{order[4]}</div>
-                    <div className="flex justify-between md:w-[75%]">
-                      <div className="text-sm text-gray-600 font-semibold w-fit">Color: {order[5]}</div>
-                      <div className="text-sm font-semibold text-gray-600 w-fit">Quantity: {order[7]} Mtr</div>
-                      <div className="text-sm font-semibold text-gray-600 w-fit">Pcs: {order[6]}</div>
-                    </div>
+                    <div className="text-gray-700 mt-2">
+                      <div className="font-bold text-lg">{order[4]}</div>
+                      <div className="flex justify-between md:w-[75%]">
+                        <div className="text-sm text-gray-600 font-semibold w-fit">Color: {order[5]}</div>
+                        <div className="text-sm font-semibold text-gray-600 w-fit">Quantity: {order[7]} Mtr</div>
+                        <div className="text-sm font-semibold text-gray-600 w-fit">Pcs: {order[6]}</div>
+                      </div>
+                      <div className="text-sm text-gray-600 font-semibold mt-1">Color Code: {order[17] || '-'}</div>
                     {order[15] === "yes" || order[15] === "Yes" ? (
                       <div className="flex space-x-8 mt-2">
                         <div className="text-gray-600 font-semibold w-1/2 text-sm">Dispatched Date: {order[11]}</div>
@@ -1010,10 +1050,17 @@ const YourStocks = () => {
                     {city === "Kolkata" && (
                       <div>
                         <button
-                          className="w-32 bg-blue-700 text-white p-1 rounded-xl my-2"
+                          disabled={loadingActions[`transfer-bd-${order[0]}`]}
+                          className="w-32 bg-blue-700 text-white p-1 rounded-xl my-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                           onClick={() => onConfirmDispatch(order[0])}
                         >
-                          Transfer to Bangladesh
+                          {loadingActions[`transfer-bd-${order[0]}`] && (
+                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          )}
+                          <span>Transfer to Bangladesh</span>
                         </button>
                       </div>
                     )}
@@ -1067,10 +1114,17 @@ const YourStocks = () => {
                     Cancel
                   </button>
                   <button
+                    disabled={loadingActions[`transfer-bd-${selectedStockId}`] || loadingActions[`dispatch-${selectedStockId}`]}
                     onClick={() => city === "Kolkata" ? transferToBangladesh(selectedStockId) : sendToTransport(selectedStockId)}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
-                    Confirm
+                    {(loadingActions[`transfer-bd-${selectedStockId}`] || loadingActions[`dispatch-${selectedStockId}`]) && (
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    <span>Confirm</span>
                   </button>
                 </div>
               </div>

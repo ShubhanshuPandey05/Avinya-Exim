@@ -19,7 +19,7 @@ export default function AddSale() {
   const [paymentStatus, setPaymentStatus] = useState("due");
   const [amountReceived, setAmountReceived] = useState("");
   const [items, setItems] = useState([
-    { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", stockId: "", availablePcs: "", availableQty: "" },
+    { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", colorCode: "", pcs: "", stockId: "", availablePcs: "", availableQty: "" },
   ]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -77,6 +77,7 @@ export default function AddSale() {
           ...updatedItems[index],
           itemName: selectedItem[4],
           color: selectedItem[5],
+          colorCode: selectedItem[17] || "", // Color code is at last index
           pcs: selectedItem[14],
           quantity: selectedItem[13],
           rate: selectedItem[8],
@@ -104,7 +105,7 @@ export default function AddSale() {
   };
 
   const handleAddItem = () => {
-    setItems([...items, { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", stockId: "" }]);
+    setItems([...items, { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", colorCode: "", pcs: "", stockId: "" }]);
   };
 
   const handleRemoveItem = (index) => {
@@ -137,7 +138,7 @@ export default function AddSale() {
       });
 
       if (response.ok) {
-        setItems([{ itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", stockId: "" }]);
+        setItems([{ itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", colorCode: "", pcs: "", stockId: "" }]);
         setPersonName("")
         setPartyName("")
         setContactNo("")
@@ -404,6 +405,19 @@ export default function AddSale() {
                         value={item.color}
                         placeholder="Color"
                         onChange={(e) => handleItemChange(index, "color", e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600"
+                        disabled
+                      />
+                    </div>
+
+                    {/* Color Code */}
+                    <div className="lg:col-span-3 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Color Code</label>
+                      <input
+                        type="text"
+                        value={item.colorCode}
+                        placeholder="Color code"
+                        onChange={(e) => handleItemChange(index, "colorCode", e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600"
                         disabled
                       />

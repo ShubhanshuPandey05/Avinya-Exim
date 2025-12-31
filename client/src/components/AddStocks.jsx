@@ -13,12 +13,13 @@ export default function AddStocks() {
     userType: ""
   };
   const [items, setItems] = useState([
-    { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", weight: "" },
+    { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", colorCode: "", pcs: "", weight: "" },
   ]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [itemOptions, setItemOptions] = useState([]);
   const [units, setUnits] = useState([]);
+  const [colorCodeOptions, setColorCodeOptions] = useState([]);
   const { showLoading, hideLoading } = useLoading();
   const { refreshStocks } = useData();
 
@@ -40,6 +41,15 @@ export default function AddStocks() {
         });
         const data2 = await response2.json();
         setUnits(data2.data.map((item) => item["Color"]));
+        
+        // Fetch color codes
+        const response3 = await fetch(`${SERVER_URL}/api/get-stockColorCode`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+        const data3 = await response3.json();
+        setColorCodeOptions(data3.data.map((item) => item["Code"] || item["Color Code"] || item["ColorCode"]));
         hideLoading();
 
       } catch (error) {
@@ -77,7 +87,7 @@ export default function AddStocks() {
   };
 
   const handleAddItem = () => {
-    setItems([...items, { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", weight: "" }]);
+    setItems([...items, { itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", colorCode: "", pcs: "", weight: "" }]);
   };
 
   const handleRemoveItem = (index) => {
@@ -102,7 +112,7 @@ export default function AddStocks() {
       });
 
       if (response.ok) {
-        setItems([{ itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", pcs: "", weight: "" }]);
+        setItems([{ itemName: "", bellNo: "", quantity: "", rate: "", amount: "", color: "", colorCode: "", pcs: "", weight: "" }]);
         setShowSuccessModal(true);
         toast.success("Stocks added successfully!");
         
@@ -248,6 +258,23 @@ export default function AddStocks() {
                         {units.map((unit) => (
                           <option key={unit} value={unit}>
                             {unit}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Color Code */}
+                    <div className="lg:col-span-3 sm:col-span-1 col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Color Code</label>
+                      <select
+                        value={item.colorCode}
+                        onChange={(e) => handleItemChange(index, "colorCode", e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
+                      >
+                        <option value="">Select Color Code</option>
+                        {colorCodeOptions.map((code) => (
+                          <option key={code} value={code}>
+                            {code}
                           </option>
                         ))}
                       </select>
