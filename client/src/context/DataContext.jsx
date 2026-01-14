@@ -23,12 +23,20 @@ export const DataProvider = ({ children }) => {
 
   // Fetch all data at once
   const fetchAllData = async () => {
-    if (!city) return;
+    // Read city dynamically from localStorage each time
+    const currentAuthUser = JSON.parse(localStorage.getItem("authUser")) || {};
+    const currentCity = currentAuthUser.city || "";
+    
+    if (!currentCity) {
+      console.log("No city found in authUser, skipping data fetch");
+      return;
+    }
 
+    console.log("Fetching data for city:", currentCity);
     showLoading();
     try {
       // Fetch stocks data
-      const stocksResponse = await fetch(`${SERVER_URL}/api/get-stock/${city}`, {
+      const stocksResponse = await fetch(`${SERVER_URL}/api/get-stock/${currentCity}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -37,14 +45,38 @@ export const DataProvider = ({ children }) => {
       });
 
       if (stocksResponse.ok) {
-        const stocksResult = await stocksResponse.json();
-        setStocksData(stocksResult.data || []);
+        // Check if response has content before parsing
+        const contentType = stocksResponse.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const text = await stocksResponse.text();
+          if (text.trim()) {
+            try {
+              const stocksResult = JSON.parse(text);
+              setStocksData(stocksResult.data || []);
+            } catch (parseError) {
+              console.error("Error parsing stocks JSON:", parseError);
+              setStocksData([]);
+            }
+          } else {
+            console.log("Stocks response is empty");
+            setStocksData([]);
+          }
+        } else {
+          console.log("Stocks response is not JSON");
+          setStocksData([]);
+        }
+      } else {
+        console.log("Stocks response not OK, status:", stocksResponse.status);
+        setStocksData([]);
       }
 
       // Fetch receiving stocks data (only for Bangladesh and Kolkata)
-      if (city === 'Bangladesh' || city === 'Kolkata') {
+      // Use case-insensitive comparison
+      const cityLower = currentCity.toLowerCase();
+      if (cityLower === 'bangladesh' || cityLower === 'kolkata') {
+        console.log("Fetching receiving stocks for city:", currentCity);
         try {
-          const receivingResponse = await fetch(`${SERVER_URL}/api/get-stockRecieved?city=${city}`, {
+          const receivingResponse = await fetch(`${SERVER_URL}/api/get-stockRecieved?city=${currentCity}`, {
             method: 'GET',
             headers: {
               "Content-Type": "application/json",
@@ -52,22 +84,50 @@ export const DataProvider = ({ children }) => {
             credentials: "include",
           });
 
-          if (receivingResponse.ok && receivingResponse.status !== 204) {
-            const receivingResult = await receivingResponse.json();
-            setReceivingStocksData(receivingResult.data || []);
+          console.log("Receiving stocks response status:", receivingResponse.status);
+          if (receivingResponse.status === 204) {
+            console.log("No receiving stocks found (204 status)");
+            setReceivingStocksData([]);
+          } else if (receivingResponse.ok) {
+            // Check if response has content before parsing
+            const contentType = receivingResponse.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const text = await receivingResponse.text();
+              if (text.trim()) {
+                try {
+                  const receivingResult = JSON.parse(text);
+                  console.log("Receiving stocks data:", receivingResult.data?.length || 0, "items");
+                  setReceivingStocksData(receivingResult.data || []);
+                } catch (parseError) {
+                  console.error("Error parsing receiving stocks JSON:", parseError);
+                  setReceivingStocksData([]);
+                }
+              } else {
+                console.log("Receiving stocks response is empty");
+                setReceivingStocksData([]);
+              }
+            } else {
+              console.log("Receiving stocks response is not JSON");
+              setReceivingStocksData([]);
+            }
           } else {
+            console.log("Receiving stocks response not OK, status:", receivingResponse.status);
             setReceivingStocksData([]);
           }
         } catch (error) {
           console.error("Error fetching receiving stocks:", error);
           setReceivingStocksData([]);
         }
+      } else {
+        console.log("City is not Bangladesh or Kolkata, skipping receiving stocks fetch. City:", currentCity);
       }
 
       // Fetch sales data (only for Surat and Bangladesh)
-      if (city === 'Surat' || city === 'Bangladesh') {
+      const cityLowerForSales = currentCity.toLowerCase();
+      if (cityLowerForSales === 'surat' || cityLowerForSales === 'bangladesh') {
+        console.log("Fetching sales data for city:", currentCity);
         try {
-          const salesResponse = await fetch(`${SERVER_URL}/api/get-sales/${city}`, {
+          const salesResponse = await fetch(`${SERVER_URL}/api/get-sales/${currentCity}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -76,8 +136,29 @@ export const DataProvider = ({ children }) => {
           });
 
           if (salesResponse.ok) {
-            const salesResult = await salesResponse.json();
-            setSalesData(salesResult.data || []);
+            // Check if response has content before parsing
+            const contentType = salesResponse.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const text = await salesResponse.text();
+              if (text.trim()) {
+                try {
+                  const salesResult = JSON.parse(text);
+                  setSalesData(salesResult.data || []);
+                } catch (parseError) {
+                  console.error("Error parsing sales JSON:", parseError);
+                  setSalesData([]);
+                }
+              } else {
+                console.log("Sales response is empty");
+                setSalesData([]);
+              }
+            } else {
+              console.log("Sales response is not JSON");
+              setSalesData([]);
+            }
+          } else {
+            console.log("Sales response not OK, status:", salesResponse.status);
+            setSalesData([]);
           }
         } catch (error) {
           console.error("Error fetching sales:", error);
@@ -96,11 +177,22 @@ export const DataProvider = ({ children }) => {
 
   // Initial data fetch
   useEffect(() => {
-    if (city && !isDataLoaded) {
+    // Read city dynamically from localStorage each time
+    const currentAuthUser = JSON.parse(localStorage.getItem("authUser")) || {};
+    const currentCity = currentAuthUser.city || "";
+    
+    console.log("DataContext useEffect - currentCity:", currentCity, "isDataLoaded:", isDataLoaded);
+    
+    if (currentCity && !isDataLoaded) {
+      console.log("Calling fetchAllData for city:", currentCity);
       fetchAllData();
+    } else if (!currentCity) {
+      console.log("No city found in localStorage, skipping fetch");
+    } else if (isDataLoaded) {
+      console.log("Data already loaded, skipping fetch");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [city]);
+  }, [city, isDataLoaded]);
 
   // Function to refresh specific data
   const refreshStocks = async () => {
@@ -123,11 +215,29 @@ export const DataProvider = ({ children }) => {
       });
 
       if (response.ok) {
-        const result = await response.json();
-        setStocksData(result.data || []);
-        console.log("Stocks refreshed successfully, count:", result.data?.length || 0);
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const text = await response.text();
+          if (text.trim()) {
+            try {
+              const result = JSON.parse(text);
+              setStocksData(result.data || []);
+              console.log("Stocks refreshed successfully, count:", result.data?.length || 0);
+            } catch (parseError) {
+              console.error("Error parsing stocks JSON on refresh:", parseError);
+              setStocksData([]);
+            }
+          } else {
+            console.log("Stocks refresh response is empty");
+            setStocksData([]);
+          }
+        } else {
+          console.log("Stocks refresh response is not JSON");
+          setStocksData([]);
+        }
       } else {
         console.error("Failed to refresh stocks, status:", response.status);
+        setStocksData([]);
       }
     } catch (error) {
       console.error("Error refreshing stocks:", error);
@@ -139,8 +249,14 @@ export const DataProvider = ({ children }) => {
     const currentAuthUser = JSON.parse(localStorage.getItem("authUser")) || {};
     const currentCity = currentAuthUser.city || city;
     
-    if (currentCity !== 'Bangladesh' && currentCity !== 'Kolkata') return;
+    // Use case-insensitive comparison
+    const cityLower = currentCity.toLowerCase();
+    if (cityLower !== 'bangladesh' && cityLower !== 'kolkata') {
+      console.log("City is not Bangladesh or Kolkata, skipping refresh. City:", currentCity);
+      return;
+    }
     
+    console.log("Refreshing receiving stocks for city:", currentCity);
     try {
       const response = await fetch(`${SERVER_URL}/api/get-stockRecieved?city=${currentCity}`, {
         method: 'GET',
@@ -150,10 +266,33 @@ export const DataProvider = ({ children }) => {
         credentials: "include",
       });
 
-      if (response.ok && response.status !== 204) {
-        const result = await response.json();
-        setReceivingStocksData(result.data || []);
+      console.log("Refresh receiving stocks response status:", response.status);
+      if (response.status === 204) {
+        console.log("No receiving stocks found on refresh (204 status)");
+        setReceivingStocksData([]);
+      } else if (response.ok) {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const text = await response.text();
+          if (text.trim()) {
+            try {
+              const result = JSON.parse(text);
+              console.log("Refreshed receiving stocks data:", result.data?.length || 0, "items");
+              setReceivingStocksData(result.data || []);
+            } catch (parseError) {
+              console.error("Error parsing receiving stocks JSON on refresh:", parseError);
+              setReceivingStocksData([]);
+            }
+          } else {
+            console.log("Receiving stocks refresh response is empty");
+            setReceivingStocksData([]);
+          }
+        } else {
+          console.log("Receiving stocks refresh response is not JSON");
+          setReceivingStocksData([]);
+        }
       } else {
+        console.log("Receiving stocks refresh response not OK, status:", response.status);
         setReceivingStocksData([]);
       }
     } catch (error) {
@@ -178,11 +317,29 @@ export const DataProvider = ({ children }) => {
       });
 
       if (response.ok) {
-        const result = await response.json();
-        setSalesData(result.data || []);
-        console.log("Sales refreshed successfully, count:", result.data?.length || 0);
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const text = await response.text();
+          if (text.trim()) {
+            try {
+              const result = JSON.parse(text);
+              setSalesData(result.data || []);
+              console.log("Sales refreshed successfully, count:", result.data?.length || 0);
+            } catch (parseError) {
+              console.error("Error parsing sales JSON on refresh:", parseError);
+              setSalesData([]);
+            }
+          } else {
+            console.log("Sales refresh response is empty");
+            setSalesData([]);
+          }
+        } else {
+          console.log("Sales refresh response is not JSON");
+          setSalesData([]);
+        }
       } else {
         console.error("Failed to refresh sales, status:", response.status);
+        setSalesData([]);
       }
     } catch (error) {
       console.error("Error refreshing sales:", error);
