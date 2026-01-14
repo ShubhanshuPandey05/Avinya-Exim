@@ -45,7 +45,7 @@ export const getStocksItems = async (req, res) => {
     const rows = result.data.values;
 
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ message: "No data found." });
+      return res.status(204).json({ message: "No data found." });
     }
 
     // Get headers from the first row
@@ -87,7 +87,49 @@ export const getStocksColors = async (req, res) => {
     const rows = result.data.values;
 
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ message: "No data found." });
+      return res.status(204).json({ message: "No data found." });
+    }
+
+    // Get headers from the first row
+    const headers = rows[0];
+
+    // Convert rows to objects for better readability
+    const orders = rows.slice(1).map((row) => {
+      return headers.reduce((acc, header, index) => {
+        acc[header] = row[index] || "";
+        return acc;
+      }, {});
+    });
+
+    res.json({ data: orders });
+  } catch (error) {
+    console.error("Error reading Google Sheets:", error);
+    res.status(500).json({ error: "Failed to read the Google Sheet." });
+  }
+};
+
+
+
+
+
+// ..........Get-Colors-Code..................................................................................................................................
+
+
+
+
+
+export const getStocksColorsCode = async (req, res) => {
+
+  try {
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "Stocks Color Codes",
+    });
+
+    const rows = result.data.values;
+
+    if (!rows || rows.length === 0) {
+      return res.status(204).json({ message: "No data found." });
     }
 
     // Get headers from the first row
@@ -167,7 +209,8 @@ export const addStocks = async (req, res) => {
         item.quantity,
         item.pcs,
         "",
-        item.weight
+        item.weight,
+        item.colorCode
       ]
     });
 
@@ -236,7 +279,7 @@ export const getStocksByCity = async (req, res) => {
     const rows = result.data.values;
 
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ message: "No data found." });
+      return res.status(204).json({ message: "No data found." });
     }
 
     const headers = rows[0];
@@ -264,7 +307,7 @@ export const getStocksByCity = async (req, res) => {
     }
 
     if (filteredRows.length === 0) {
-      return res.status(404).json({ message: `No Stock in this ${city}` });
+      return res.status(204).json({ message: `No Stock in this ${city}` });
     }
     // console.log(filteredRows)
 
@@ -302,7 +345,7 @@ export const getSales = async (req, res) => {
       const rows = result.data.values;
 
       if (!rows || rows.length === 0) {
-        return res.status(404).json({ message: "No data found." });
+        return res.status(204).json({ message: "No data found." });
       }
 
       let filteredRows;
@@ -310,7 +353,7 @@ export const getSales = async (req, res) => {
       filteredRows = rows.slice(1).reverse();
 
       if (filteredRows.length === 0) {
-        return res.status(404).json({ message: `No sales found for ${city}` });
+        return res.status(204).json({ message: `No sales found for ${city}` });
       }
 
       res.json({ data: filteredRows });
@@ -357,7 +400,7 @@ export const stockDispatched = async (req, res) => {
     const rows = getResponse.data.values;
     if (!rows || rows.length === 0) {
       console.log("No data found in the sheet.");
-      return res.status(404).json({ message: "No data found in the sheet." });
+      return res.status(204).json({ message: "No data found in the sheet." });
     }
 
     // Find the row to update
@@ -372,7 +415,7 @@ export const stockDispatched = async (req, res) => {
 
     if (rowIndex === -1) {
       console.log("Stock not found.");
-      return res.status(404).json({ message: "Stock not found." });
+      return res.status(204).json({ message: "Stock not found." });
     }
 
     // Update specific cells in the located row
@@ -438,7 +481,7 @@ export const transferStockToKolkata = async (req, res) => {
     const rows = getResponse.data.values;
     if (!rows || rows.length === 0) {
       console.log("No data found in the sheet.");
-      return res.status(404).json({ message: "No data found in the sheet." });
+      return res.status(204).json({ message: "No data found in the sheet." });
     }
 
     // Find the row to update
@@ -453,7 +496,7 @@ export const transferStockToKolkata = async (req, res) => {
 
     if (rowIndex === -1) {
       console.log("Stock not found.");
-      return res.status(404).json({ message: "Stock not found." });
+      return res.status(204).json({ message: "Stock not found." });
     }
 
     // Update specific cells in the located row
@@ -518,7 +561,7 @@ export const receiveStockFromSurat = async (req, res) => {
 
     const rows = getResponse.data.values;
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ message: "No data found in the sheet." });
+      return res.status(204).json({ message: "No data found in the sheet." });
     }
 
     // Find the row index for the stockId
@@ -526,7 +569,7 @@ export const receiveStockFromSurat = async (req, res) => {
     const rowIndex = rows.findIndex(row => row[targetColumnIndex] === stockId);
 
     if (rowIndex === -1) {
-      return res.status(404).json({ message: "Stock not found." });
+      return res.status(204).json({ message: "Stock not found." });
     }
 
     // Update relevant cells
@@ -578,7 +621,7 @@ export const transferStockToBangladesh = async (req, res) => {
     const rows = getResponse.data.values;
     if (!rows || rows.length === 0) {
       console.log("No data found in the sheet.");
-      return res.status(404).json({ message: "No data found in the sheet." });
+      return res.status(204).json({ message: "No data found in the sheet." });
     }
 
     // Find the row to update
@@ -593,7 +636,7 @@ export const transferStockToBangladesh = async (req, res) => {
 
     if (rowIndex === -1) {
       console.log("Stock not found.");
-      return res.status(404).json({ message: "Stock not found." });
+      return res.status(204).json({ message: "Stock not found." });
     }
 
     // Update specific cells in the located row
@@ -656,7 +699,7 @@ export const stockRecieved = async (req, res) => {
 
     const rows = getResponse.data.values;
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ message: "No data found in the sheet." });
+      return res.status(204).json({ message: "No data found in the sheet." });
     }
 
     // Find the row index for the stockId
@@ -664,7 +707,7 @@ export const stockRecieved = async (req, res) => {
     const rowIndex = rows.findIndex(row => row[targetColumnIndex] === stockId);
 
     if (rowIndex === -1) {
-      return res.status(404).json({ message: "Stock not found." });
+      return res.status(204).json({ message: "Stock not found." });
     }
 
     // Update relevant cells
@@ -717,7 +760,7 @@ export const getStocksToBeRecieved = async (req, res) => {
     const rows = result.data.values;
 
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ message: "No data found." });
+      return res.status(204).json({ message: "No data found." });
     }
 
     const headers = rows[0];
@@ -799,7 +842,7 @@ export const addSales = async (req, res) => {
     const rows = getResponse.data.values;
 
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ error: "No data found in the sheet." });
+      return res.status(204).json({ error: "No data found in the sheet." });
     }
 
     const targetColumnIndex = 0; // Assuming stockId is in the first column
@@ -870,7 +913,8 @@ export const addSales = async (req, res) => {
         paymentStatus || 'due', // Payment Status
         receivedAmount, // Amount Received
         pendingAmount, // Amount Pending
-        paymentDate, // Last Payment Date
+        paymentDate, // Last Payment Date,
+        item.colorCode
       ];
 
       newSales.push(newSale);
@@ -928,13 +972,13 @@ export const updatePaymentStatus = async (req, res) => {
 
     const rows = result.data.values;
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ error: "No sales data found" });
+      return res.status(204).json({ error: "No sales data found" });
     }
 
     // Find the sale row
     const saleRowIndex = rows.findIndex(row => row[0] === saleId.toString());
     if (saleRowIndex === -1) {
-      return res.status(404).json({ error: "Sale not found" });
+      return res.status(204).json({ error: "Sale not found" });
     }
 
     const saleRow = rows[saleRowIndex];
@@ -1019,7 +1063,7 @@ export const bulkTransferToKolkata = async (req, res) => {
 
     const rows = result.data.values;
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ error: "No data found in the sheet." });
+      return res.status(204).json({ error: "No data found in the sheet." });
     }
 
     const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
@@ -1095,7 +1139,7 @@ export const bulkReceiveFromSurat = async (req, res) => {
     const rows = result.data.values;
     if (!rows || rows.length === 0) {
       console.log('No data found in sheet');
-      return res.status(404).json({ error: "No data found in the sheet." });
+      return res.status(204).json({ error: "No data found in the sheet." });
     }
 
     console.log('Total rows in sheet:', rows.length);
@@ -1199,7 +1243,7 @@ export const bulkTransferToBangladesh = async (req, res) => {
 
     const rows = result.data.values;
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ error: "No data found in the sheet." });
+      return res.status(204).json({ error: "No data found in the sheet." });
     }
 
     const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
@@ -1271,7 +1315,7 @@ export const bulkReceiveFromKolkata = async (req, res) => {
 
     const rows = result.data.values;
     if (!rows || rows.length === 0) {
-      return res.status(404).json({ error: "No data found in the sheet." });
+      return res.status(204).json({ error: "No data found in the sheet." });
     }
 
     const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
